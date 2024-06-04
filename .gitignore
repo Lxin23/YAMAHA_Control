@@ -1,0 +1,16 @@
+ui/
+.idea/
+__pycache__/
+byhy.py
+cfg.json
+cfg_test.json
+connector_server.py
+eat.py
+get_pip.py
+main.py
+main_02.py
+socket_test.py
+temp_replace.py
+test.py
+watermalen.py
+
