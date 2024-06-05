@@ -1,11 +1,11 @@
 from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import Qt, QPointF
 from PySide6.QtGui import QTransform, QAction, QIcon
+from PySide6.QtWidgets import QWidget, QSizePolicy
 import qtawesome as qta
 import json
 
-from PySide6.QtWidgets import QWidget, QSizePolicy
-
+from connector_server_test import start_server_thread
 from share import ShareInfo
 
 X_MAX = 800
@@ -154,6 +154,7 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
 
         else:
             return
+
 
 class RectItem(Item, QtWidgets.QGraphicsRectItem):
     def __init__(self, *args):
@@ -578,7 +579,7 @@ class MWindow(QtWidgets.QMainWindow):
         self.addToolBar(toolbar)
 
         # 添加 工具栏 条目Action
-        actionSave = toolbar.addAction("保存")    # qta.icon("ph.download-light",color='green'),
+        actionSave = toolbar.addAction("保存")  # qta.icon("ph.download-light",color='green'),
         actionSave.triggered.connect(self.save)
 
         actionLoad = toolbar.addAction("加载")
@@ -603,6 +604,7 @@ class MWindow(QtWidgets.QMainWindow):
         # actionDraws = toolbar.insertAction(toolbar.actions()[-1], action)
         # actionDraws.triggered.connect(self.draws)
         action.triggered.connect(self.start)
+
     def load(self):
         with open('cfg.json', 'r', encoding='utf8') as f:
             content = f.read()
@@ -794,13 +796,13 @@ class MWindow(QtWidgets.QMainWindow):
 
 # from connector import startCommunicationThread
 # startCommunicationThread()
-from connector_server_test import start_server_thread
-start_server_thread()
+if __name__ == '__main__':
+    start_server_thread()
 
-app = QtWidgets.QApplication()
-app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.Round)
+    app = QtWidgets.QApplication()
+    app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.Round)
 
-window = MWindow()
-window.show()
-window.view.centerOn(QPointF(-50, -50))
-app.exec()
+    window = MWindow()
+    window.show()
+    window.view.centerOn(QPointF(-50, -50))
+    app.exec()
