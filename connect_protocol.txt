@@ -1,19 +1,25 @@
-
 通信协议
-
 Socket连接
 
 机械臂: ShapeSend
 
 服务端: ShapeCode
 
+# 机械臂: ShapeGet
+
 机械臂: PointSend
 
 循环发送坐标点
 
-	服务端: 发送一个坐标点 
+    服务端: 发送一个坐标点
 
-	机械臂: GoAhead   
-	# 停止发送坐标点时 机械臂端 发送 Finished
+    机械臂: GoAhead{i} 	# I 第几指个点
+    # 如果点位发送错误，发送NoPoint
+    # 默认四个点，当I 为4，既 GoAhead4 时退出循环
 
-至此，完成一轮通信，如果需要下一个图形，则机械臂端重新发送: PointSend
+机械臂: HanJiStart	# 等待指令开始焊接
+
+服务端: num
+
+# 至此，完成一轮通信，如果需要下一个图形，则从头开始
+
