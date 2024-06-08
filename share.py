@@ -54,7 +54,7 @@ class Gstore:
         to update the msg to send
         :return:
         """
-        print('len item_list', len(self.item_list))
+        print('item_list ', len(self.item_list))
         for item in self.item_list:
             self.msg_shapes.append(shape.get(item.__class__.__name__))
             # x_1 = item.pos().x()

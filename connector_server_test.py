@@ -19,8 +19,8 @@ msg_next_point = 'GoAhead'
 msg_next_shape = 'ShapeSend'
 msg_start_point = 'PointSend'
 msg_stop_send_point = 'Finished'
-msg_start_hanji = 'HanJiStart'
-msg__hanji_satrtcode = '1'
+msg_start_hanji = 'HanjiStart'
+msg_hanji_satrtcode = '1\r\n'
 state_point = 0
 
 
@@ -61,6 +61,7 @@ def connectionRun():
         if not recved:
             # time.sleep(5)
             # continue
+            # 连接中断
             break
 
         info = recved.decode()
@@ -100,7 +101,9 @@ def connectionRun():
                     break
 
         if msg_start_hanji in info:
-            dataSocket.send(msg__hanji_satrtcode.encode())
+            time.sleep(1)
+            dataSocket.send(msg_hanji_satrtcode.encode())
+            print(f'发送焊机启动消息 {msg_hanji_satrtcode}')
 
     dataSocket.close()
     listenSocket.close()

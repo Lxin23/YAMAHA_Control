@@ -804,5 +804,5 @@ if __name__ == '__main__':
 
     window = MWindow()
     window.show()
-    window.view.centerOn(QPointF(-50, -50))
+    # window.view.centerOn(QPointF(-50, -50))
     app.exec()
