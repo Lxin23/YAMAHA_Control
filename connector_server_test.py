@@ -108,7 +108,9 @@ def connectionRun():
 
         if msg_complete_hanji in info:
             index = info.index(msg_complete_hanji)
-            print(index)
+            percentage = int(info[index + len(msg_complete_hanji): len(info)])
+            # print(percentage)
+            ShareInfo.gstore.pv = percentage
 
     dataSocket.close()
     listenSocket.close()

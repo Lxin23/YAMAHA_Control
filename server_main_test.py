@@ -710,13 +710,14 @@ class MWindow(QtWidgets.QMainWindow):
         self.timer.start(100)  # 每100毫秒更新一次
 
     def updateProgress(self):
-        if Gstore.pv != self.dlg.value():
-            self.dlg.setValue(Gstore.pv)
+        if ShareInfo.gstore.pv != self.dlg.value():
+            self.dlg.setValue(ShareInfo.gstore.pv)
 
-        if Gstore.pv == 100:
+        if ShareInfo.gstore.pv == 100:
             self.timer.stop()
-            Gstore.pv = 0
-            self.dlg.setValue(Gstore.pv)
+            ShareInfo.gstore.pv = 0
+            self.dlg.setValue(ShareInfo.gstore.pv)
+            print('焊机工作完成')
             self.dlg.close()
 
     def clear_buff(self):
