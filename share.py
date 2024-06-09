@@ -1,6 +1,7 @@
 shape = {'RectItem': '1\r\n', 'EllipseItem': '2\r\n'}
 proportion = 1.2  # 机械臂坐标系大小为画布大小的几倍
 point_num = 50  # 初始点位
+msg_hanji_satrtcode = '1\r\n'
 
 
 def format_number(num):
@@ -45,9 +46,11 @@ def msg_transform(fx, fy, fz=0.0, fr=0.0, fa=0.0, fb=0.0, f=1, f_1=0, f_2=0):
 
 
 class Gstore:
+    pv = 0
     item_list = []
     msg_shapes = []
     msg_points = []
+    msg_hanji_satrt = msg_hanji_satrtcode
 
     def update_msg(self):
         """

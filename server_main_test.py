@@ -1,12 +1,12 @@
 from PySide6 import QtWidgets, QtGui, QtCore
-from PySide6.QtCore import Qt, QPointF
+from PySide6.QtCore import Qt, QPointF, QTimer
 from PySide6.QtGui import QTransform, QAction, QIcon
-from PySide6.QtWidgets import QWidget, QSizePolicy
+from PySide6.QtWidgets import QWidget, QSizePolicy, QProgressBar, QProgressDialog
 import qtawesome as qta
 import json
 
 from connector_server_test import start_server_thread
-from share import ShareInfo
+from share import ShareInfo, Gstore
 
 X_MAX = 800
 Y_MAX = 600
@@ -23,6 +23,33 @@ QHeaderView::section {
     border-right: 1px solid #e0e0e0;
     border-bottom: 1px solid #e0e0e0;
 '''
+
+
+class ProgressBar(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.resize(310, 80)
+        # 载入进度条控件
+        self.pgb = QProgressBar(self)
+        self.setWindowTitle("绘制进行中...")
+        self.pgb.move(30, 30)
+        self.pgb.resize(250, 20)
+        self.pgb.setStyleSheet(
+            "QProgressBar { border: 2px solid grey; border-radius: 5px; color: rgb(20,20,20);  background-color: "
+            "#FFFFFF; text-align: center;}QProgressBar::chunk {background-color: rgb(100,200,200); border-radius: "
+            "10px; margin: 0.1px;  width: 1px;}")
+        # 其中 width 是设置进度条每一步的宽度
+        # margin 设置两步之间的间隔
+
+        # 设置进度条的范围
+        self.pgb.setMinimum(0)
+        self.pgb.setMaximum(100)
+        self.pgb.setValue(0)
+        # 设置进度条文字格式
+        self.pgb.setFormat('Finished  %p%'.format(self.pgb.value() - self.pgb.minimum()))
 
 
 class Item:
@@ -667,6 +694,30 @@ class MWindow(QtWidgets.QMainWindow):
         ShareInfo.gstore.item_list.reverse()
 
         ShareInfo.gstore.update_msg()
+
+        elapsed = 100
+        self.dlg = QProgressDialog('进度', '取消', 0, elapsed, self)
+        self.dlg.setWindowTitle('等待......')
+        self.dlg.setWindowModality(Qt.WindowModal)
+        self.dlg.setAutoClose(False)
+        self.bar = ProgressBar()
+        self.dlg.setBar(self.bar.pgb)
+        self.dlg.show()
+        self.dlg.setValue(1)
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.updateProgress)
+        self.timer.start(100)  # 每100毫秒更新一次
+
+    def updateProgress(self):
+        if Gstore.pv != self.dlg.value():
+            self.dlg.setValue(Gstore.pv)
+
+        if Gstore.pv == 100:
+            self.timer.stop()
+            Gstore.pv = 0
+            self.dlg.setValue(Gstore.pv)
+            self.dlg.close()
 
     def clear_buff(self):
         print('clear buffer')

@@ -20,6 +20,7 @@ msg_next_shape = 'ShapeSend'
 msg_start_point = 'PointSend'
 msg_stop_send_point = 'Finished'
 msg_start_hanji = 'HanjiStart'
+msg_complete_hanji = 'Complete'
 msg_hanji_satrtcode = '1\r\n'
 state_point = 0
 
@@ -102,8 +103,12 @@ def connectionRun():
 
         if msg_start_hanji in info:
             time.sleep(1)
-            dataSocket.send(msg_hanji_satrtcode.encode())
-            print(f'发送焊机启动消息 {msg_hanji_satrtcode}')
+            dataSocket.send(ShareInfo.gstore.msg_hanji_satrt.encode())
+            print(f'发送焊机启动消息 {ShareInfo.gstore.msg_hanji_satrt}')
+
+        if msg_complete_hanji in info:
+            index = info.index(msg_complete_hanji)
+            print(index)
 
     dataSocket.close()
     listenSocket.close()
