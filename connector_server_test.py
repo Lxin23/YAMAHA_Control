@@ -72,7 +72,7 @@ def connectionRun():
             # ShareInfo.gstore.update_msg()
             ShapeCode = msg_send_shape(dataSocket)  # 发送ShapeCode
 
-            recv = dataSocket.recv(BUFLEN)
+            # recv = dataSocket.recv(BUFLEN)
             # print(f'收到对方信息： {recv.decode()}')
 
             # if ShapeCode[0] in recv.decode():  # 我们发送过去的与对方接收到的一
@@ -107,10 +107,9 @@ def connectionRun():
             print(f'发送焊机启动消息 {ShareInfo.gstore.msg_hanji_satrt}')
 
         if msg_complete_hanji in info:
-            index = info.index(msg_complete_hanji)
-            percentage = int(info[index + len(msg_complete_hanji): len(info)])
-            # print(percentage)
-            ShareInfo.gstore.pv = percentage
+            print('收到 焊机完成信息')
+            ShareInfo.gstore.msg_dialog = 'stop'
+            # print(ShareInfo.gstore.msg_dialog)
 
     dataSocket.close()
     listenSocket.close()

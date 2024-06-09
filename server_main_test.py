@@ -1,7 +1,7 @@
 from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import Qt, QPointF, QTimer
 from PySide6.QtGui import QTransform, QAction, QIcon
-from PySide6.QtWidgets import QWidget, QSizePolicy, QProgressBar, QProgressDialog
+from PySide6.QtWidgets import QWidget, QSizePolicy, QProgressBar, QProgressDialog, QVBoxLayout, QLabel
 import qtawesome as qta
 import json
 
@@ -33,23 +33,16 @@ class ProgressBar(QWidget):
     def initUI(self):
         self.resize(310, 80)
         # 载入进度条控件
-        self.pgb = QProgressBar(self)
+        # self.pgb = QProgressBar(self)
         self.setWindowTitle("绘制进行中...")
-        self.pgb.move(30, 30)
-        self.pgb.resize(250, 20)
-        self.pgb.setStyleSheet(
-            "QProgressBar { border: 2px solid grey; border-radius: 5px; color: rgb(20,20,20);  background-color: "
-            "#FFFFFF; text-align: center;}QProgressBar::chunk {background-color: rgb(100,200,200); border-radius: "
-            "10px; margin: 0.1px;  width: 1px;}")
-        # 其中 width 是设置进度条每一步的宽度
-        # margin 设置两步之间的间隔
+        self.text = QLabel("请等待...")
+        # self.text.move(130, 30)
+        self.text.setAlignment(Qt.AlignCenter)
 
-        # 设置进度条的范围
-        self.pgb.setMinimum(0)
-        self.pgb.setMaximum(100)
-        self.pgb.setValue(0)
-        # 设置进度条文字格式
-        self.pgb.setFormat('Finished  %p%'.format(self.pgb.value() - self.pgb.minimum()))
+        layout = QVBoxLayout()
+        # layout.addWidget(self.text)
+        layout.addWidget(self.text, 0, Qt.AlignCenter)
+        self.setLayout(layout)
 
 
 class Item:
@@ -687,6 +680,7 @@ class MWindow(QtWidgets.QMainWindow):
 
     def start(self):
         print('start')
+        ShareInfo.gstore.msg_dialog = ''
         draws_type = [RectItem, EllipseItem]
         for item in self.scene.items():
             if item.__class__ in draws_type:
@@ -695,30 +689,17 @@ class MWindow(QtWidgets.QMainWindow):
 
         ShareInfo.gstore.update_msg()
 
-        elapsed = 100
-        self.dlg = QProgressDialog('进度', '取消', 0, elapsed, self)
-        self.dlg.setWindowTitle('等待......')
-        self.dlg.setWindowModality(Qt.WindowModal)
-        self.dlg.setAutoClose(False)
-        self.bar = ProgressBar()
-        self.dlg.setBar(self.bar.pgb)
-        self.dlg.show()
-        self.dlg.setValue(1)
+        self.pgb = ProgressBar()
+        self.pgb.show()
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.updateProgress)
         self.timer.start(100)  # 每100毫秒更新一次
 
     def updateProgress(self):
-        if ShareInfo.gstore.pv != self.dlg.value():
-            self.dlg.setValue(ShareInfo.gstore.pv)
-
-        if ShareInfo.gstore.pv == 100:
+        if ShareInfo.gstore.msg_dialog == 'stop':
             self.timer.stop()
-            ShareInfo.gstore.pv = 0
-            self.dlg.setValue(ShareInfo.gstore.pv)
-            print('焊机工作完成')
-            self.dlg.close()
+            self.pgb.close()
 
     def clear_buff(self):
         print('clear buffer')

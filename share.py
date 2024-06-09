@@ -46,7 +46,7 @@ def msg_transform(fx, fy, fz=0.0, fr=0.0, fa=0.0, fb=0.0, f=1, f_1=0, f_2=0):
 
 
 class Gstore:
-    pv = 0
+    msg_dialog = ''
     item_list = []
     msg_shapes = []
     msg_points = []

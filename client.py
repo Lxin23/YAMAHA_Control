@@ -3,7 +3,7 @@ import socket
 import time
 import traceback
 
-from share import gstore
+from share import Gstore
 
 IP = '192.168.0.120'
 SERVER_PORT = 24
@@ -41,8 +41,8 @@ def update_msg():
     to update the msg to send
     :return:
     """
-    print('len item_list', len(gstore.item_list))
-    for item in gstore.item_list:
+    print('len item_list', len(Gstore.item_list))
+    for item in Gstore.item_list:
         msg_shapes.append(shape[item.__class__.__name__])
         # x_1 = item.pos().x()
         # y_1 = item.pos().y()
@@ -64,7 +64,7 @@ def update_msg():
             # msg.append(f'P{point_num} = {x_ls[i]} {y_ls[i]} 0 0 0 0')
             msg.append(msg_transform(x_ls[i], y_ls[i]))
     print('shapes %d\npoints %d' % (len(msg_shapes), len(msg)))
-    gstore.item_list.clear()
+    Gstore.item_list.clear()
 
 
 # 对画布中坐标点转换到机械臂坐标系中
