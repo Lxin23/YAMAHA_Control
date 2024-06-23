@@ -1,5 +1,5 @@
 shape = {'RectItem': '1\r\n', 'EllipseItem': '2\r\n'}
-proportion = 1.2  # 机械臂坐标系大小为画布大小的几倍
+proportion = 4.8  # 机械臂坐标系大小为画布大小的几倍
 point_num = 50  # 初始点位
 msg_hanji_satrtcode = '1\r\n'
 

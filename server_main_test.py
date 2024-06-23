@@ -8,8 +8,9 @@ import json
 from connector_server_test import start_server_thread
 from share import ShareInfo, Gstore
 
-X_MAX = 800
-Y_MAX = 600
+canvas_X_MAX = 958
+canvas_Y_MAX = 600
+# X_MAX = 210， Y_MAX = 150，机械臂活动范围
 shape_draw = ["rectangle", "ellipse", "diamond", "line", "text"]
 tableStyle = '''
 QTableWidget {
@@ -557,7 +558,7 @@ class MWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.resize(1200, 800)
+        self.resize(1400, 900 - 245)
 
         # central Widget
         centralWidget = QtWidgets.QWidget(self)
@@ -624,6 +625,7 @@ class MWindow(QtWidgets.QMainWindow):
         # actionDraws = toolbar.insertAction(toolbar.actions()[-1], action)
         # actionDraws.triggered.connect(self.draws)
         action.triggered.connect(self.start)
+        print(toolbar.height())
 
     def load(self):
         with open('cfg.json', 'r', encoding='utf8') as f:
@@ -664,8 +666,19 @@ class MWindow(QtWidgets.QMainWindow):
     def get_pos(self):
         for item in self.scene.selectedItems():
             print('pos: %.2f %.2f' % (item.pos().x(), item.pos().y()))
-            for point in item.polygon():
-                print(point)
+            if item.__class__ == "DiamondItem":
+                for point in item.polygon():  # 多边形（菱形）
+                    print(point)
+            else:
+                x_1, y_1 = item.props['空间坐标'].split('，')
+                x_1 = float(x_1)
+                y_1 = float(y_1)
+                x_2 = x_1 + item.rect().width()
+                y_2 = y_1 + item.rect().height()
+                x_ls = [x_1, x_2, x_2, x_1]
+                y_ls = [y_1, y_1, y_2, y_2]
+                for i in range(4):
+                    print('%.2f %.2f' % (x_ls[i], y_ls[i]))
             print('')
 
     def delItem(self):
@@ -737,7 +750,8 @@ class MWindow(QtWidgets.QMainWindow):
                 col += 1
 
     def setupCanvas(self):
-        self.scene = QtWidgets.QGraphicsScene(-50, -50, X_MAX, Y_MAX)  # 大小为 800 X 600 像素
+        self.scene = QtWidgets.QGraphicsScene(0, 0, canvas_X_MAX, canvas_Y_MAX)  # 大小为 800 X 600 像素
+        self.scene.addItem(RectItem(0, 0, 936, canvas_Y_MAX))
         self.view = DnDGraphicView(self.scene)
         # self.view.centerOn(QPointF(-50, -50))
         self.mainLayout.addWidget(self.view)
