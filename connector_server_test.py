@@ -32,7 +32,7 @@ def msg_send_shape(dataSocket):
         return ShareInfo.gstore.msg_shapes.pop(0)
     else:
         print('no shape to send')
-        return None
+        return -1
 
 
 def msg_send_point(dataSocket):
@@ -71,6 +71,11 @@ def connectionRun():
             print('accept the start imformation')
             # ShareInfo.gstore.update_msg()
             ShapeCode = msg_send_shape(dataSocket)  # 发送ShapeCode
+
+            if ShapeCode == -1:
+                while len(ShareInfo.gstore.msg_points) == 0:
+                    time.sleep(0.5)
+                msg_send_shape(dataSocket)
 
             # recv = dataSocket.recv(BUFLEN)
             # print(f'收到对方信息： {recv.decode()}')
