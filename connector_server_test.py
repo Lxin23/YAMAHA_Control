@@ -20,7 +20,7 @@ msg_next_shape = 'ShapeSend'
 msg_start_point = 'PointSend'
 msg_stop_send_point = 'Finished'
 msg_start_hanji = 'HanjiStart'
-msg_complete_hanji = 'Complete'
+msg_complete_hanji = 'COMPLETE'
 msg_hanji_satrtcode = '1\r\n'
 state_point = 0
 

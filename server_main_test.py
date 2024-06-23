@@ -221,13 +221,11 @@ class RectItem(Item, QtWidgets.QGraphicsRectItem):
             print(cfgValue)
             # qrf = self.rect()
             x, y = cfgValue.split('，')
-            x = float(x)
             # y = Y_MAX - float(y)
-            y = float(y)
             print("set", x, y)
 
+            self.remap_xy(x, y)
             # 更新矩形的位置，但保留原来的宽度和高度
-            self.setPos(x, y)
             # self.setPos(self.mapFromScene(QPointF(x, y)))
             # self.setPos(QPointF(x, y))
             # self.setRect(x, y, float(self.props['矩形长度']), float(self.props['矩形高度']))
@@ -247,7 +245,9 @@ class RectItem(Item, QtWidgets.QGraphicsRectItem):
         elif cfgName == '矩形高度':
             qrf = self.rect()
             qrf.setHeight(float(cfgValue))
+            x, y = self.props['空间坐标'].split('，')
             self.setRect(qrf)  # 重新设定
+            self.remap_xy(x, y)
 
         elif cfgName == '填充颜色':
             color = QtGui.QColor(*[int(v) for v in cfgValue.replace(' ', '').split(',')])
@@ -269,6 +269,11 @@ class RectItem(Item, QtWidgets.QGraphicsRectItem):
 
         else:
             return
+
+    def remap_xy(self, x, y):
+        x = float(x)
+        y = canvas_Y_MAX - float(y) - self.rect().height()
+        self.setPos(x, y)
 
 
 class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
@@ -314,6 +319,7 @@ class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
             x, y = cfgValue.split('，')
             x = float(x)
             # y = Y_MAX - float(y)
+            y = canvas_Y_MAX - float(y) - self.rect().height()
             y = float(y)
             print("set", x, y)
             self.setPos(x, y)
@@ -326,6 +332,8 @@ class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
         elif cfgName == '椭圆高度':
             qrf = self.rect()
             qrf.setHeight(float(cfgValue))
+            x, y = self.props['空间坐标'].split('，')
+            self.remap_xy(x, y)
             self.setRect(qrf)  # 重新设定
 
         elif cfgName == '填充颜色':
@@ -348,6 +356,11 @@ class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
 
         else:
             return
+
+    def remap_xy(self, x, y):
+        x = float(x)
+        y = canvas_Y_MAX - float(y) - self.rect().height()
+        self.setPos(x, y)
 
 
 class LineItem(Item, QtWidgets.QGraphicsLineItem):
@@ -524,7 +537,9 @@ class DnDGraphicView(QtWidgets.QGraphicsView):
             # shape.props['length'] = str(shape.polygon().length())
 
         shape.setPos(e.position())
-        shape.props['空间坐标'] = str(shape.pos().x()) + '，' + str(shape.pos().y())
+        print(shape.pos().y() , self.rect().height())
+        y = canvas_Y_MAX - shape.pos().y() - shape.rect().height()
+        shape.props['空间坐标'] = str(shape.pos().x()) + '，' + str(y)
         # print(shape.pos())
         self.scene().addItem(shape)
 
@@ -751,7 +766,7 @@ class MWindow(QtWidgets.QMainWindow):
 
     def setupCanvas(self):
         self.scene = QtWidgets.QGraphicsScene(0, 0, canvas_X_MAX, canvas_Y_MAX)  # 大小为 800 X 600 像素
-        self.scene.addItem(RectItem(0, 0, 936, canvas_Y_MAX))
+        self.scene.addItem(QtWidgets.QGraphicsRectItem(0, 0, 936, canvas_Y_MAX))
         self.view = DnDGraphicView(self.scene)
         # self.view.centerOn(QPointF(-50, -50))
         self.mainLayout.addWidget(self.view)

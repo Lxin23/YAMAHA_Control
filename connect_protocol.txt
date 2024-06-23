@@ -17,11 +17,11 @@ Socket连接
     # 如果点位发送错误，发送NoPoint
     # 默认四个点，当I 为4，既 GoAhead4 时退出循环
 
-机械臂: HanJiStart	# 等待指令开始焊接
+机械臂: HanjiStart	# 等待指令开始焊接
 
 服务端: num    # 焊机开始指令
 
-机械臂: Complete{percentage}   # percentage，完成百分比，100结束
+机械臂: COMPLETE
 
 # 至此，完成一轮通信，如果需要下一个图形，则从头开始
 

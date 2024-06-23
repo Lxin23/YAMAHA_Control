@@ -2,6 +2,8 @@ shape = {'RectItem': '1\r\n', 'EllipseItem': '2\r\n'}
 proportion = 4.8  # 机械臂坐标系大小为画布大小的几倍
 point_num = 50  # 初始点位
 msg_hanji_satrtcode = '1\r\n'
+f_z = -7.3
+f_r = 84.5
 
 
 def format_number(num):
@@ -16,7 +18,10 @@ def format_number(num):
     # 分割整数部分和小数部分
     integer_part, decimal_part = formatted_num.split('.')
     # 如果整数部分不足三位，前面补零
-    integer_part = integer_part.zfill(3)
+    if integer_part[0] == '-':
+        integer_part = integer_part.zfill(4)
+    else:
+        integer_part = integer_part.zfill(3)
     # 如果小数部分不足三位，后面补零
     decimal_part = decimal_part.ljust(3, '0')
     # 加上正负号和小数点，并返回结果
@@ -57,19 +62,30 @@ class Gstore:
         to update the msg to send
         :return:
         """
-        print('item_list ', len(self.item_list))
+        # print('item_list ', len(self.item_list))
         for item in self.item_list:
-            self.msg_shapes.append(shape.get(item.__class__.__name__))
-            # x_1 = item.pos().x()
-            # y_1 = item.pos().y()
-            x_1, y_1 = item.props['空间坐标'].split('，')
-            x_1 = float(x_1)
-            y_1 = float(y_1)
-            x_2 = x_1 + item.rect().width()
-            y_2 = y_1 + item.rect().height()
-            # detail = f'{item.__class__.__name__}.pos:\n({x_1}, {y_1})\t({x_2}, {y_1})\t({x_1}, {y_2})\t({x_2}, {y_2})'
-            x_ls = [x_1, x_2, x_2, x_1]
-            y_ls = [y_1, y_1, y_2, y_2]
+            shape_code = shape.get(item.__class__.__name__)
+            self.msg_shapes.append(shape_code)
+
+            if shape_code == shape.get('RectItem'):
+                x_1, y_1 = item.props['空间坐标'].split('，')
+                x_1 = float(x_1)
+                y_1 = float(y_1)
+                x_2 = x_1 + item.rect().width()
+                y_2 = y_1 + item.rect().height()
+                x_ls = [x_1, x_2, x_2, x_1]
+                y_ls = [y_1, y_1, y_2, y_2]
+            elif shape_code == shape.get('EllipseItem'):
+                x_1, y_1 = item.props['空间坐标'].split('，')
+                x_1 = float(x_1)
+                y_1 = float(y_1)
+                x_2 = x_1 + (item.rect().width() / 2)
+                y_2 = y_1 + (item.rect().height() / 2)
+                x_ls = [x_1, x_2, x_1 + item.rect().width(), x_2]
+                y_ls = [y_2, y_1 + item.rect().height(), y_2, y_1]
+            else:
+                print('图形信息错误', item.__class__.__name__)
+                continue
             '''
             P1 = 0 0 0 0 0 0
             P2 = 100.00 200.00 50.00 0.00 0.00 0.00
@@ -78,7 +94,7 @@ class Gstore:
 
             for i in range(4):
                 # msg.append(f'P{point_num} = {x_ls[i]} {y_ls[i]} 0 0 0 0')
-                self.msg_points.append(msg_transform(x_ls[i], y_ls[i]))
+                self.msg_points.append(msg_transform(x_ls[i], y_ls[i], fz=f_z, fr=f_r))
         print('shapes %d\npoints %d' % (len(self.msg_shapes), len(self.msg_points)))
         self.item_list.clear()
 
