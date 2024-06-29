@@ -2,7 +2,7 @@ shape = {'RectItem': '1\r\n', 'EllipseItem': '2\r\n', 'LineItem': '4\r\n'}
 proportion = 4.8  # 机械臂坐标系大小为画布大小的几倍
 point_num = 50  # 初始点位
 msg_hanji_satrtcode = '1\r\n'
-f_z = -8.0
+f_z = -11.0
 f_r = 84.5
 canvas_max_y = 600
 
