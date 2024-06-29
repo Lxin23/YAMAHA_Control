@@ -2,7 +2,7 @@ from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import Qt, QPointF, QTimer
 from PySide6.QtGui import QTransform, QAction, QIcon
 from PySide6.QtWidgets import QWidget, QSizePolicy, QProgressBar, QProgressDialog, QVBoxLayout, QLabel
-import qtawesome as qta
+# import qtawesome as qta
 import json
 
 from connector_server_test import start_server_thread
@@ -404,7 +404,7 @@ class LineItem(Item, QtWidgets.QGraphicsLineItem):
             # qrf = self.pen()
             x, y = cfgValue.split('，')
             x = float(x)
-            # y = Y_MAX - float(y)
+            y = canvas_Y_MAX - float(y)
             y = float(y)
             self.setPos(x, y)
 
@@ -538,7 +538,11 @@ class DnDGraphicView(QtWidgets.QGraphicsView):
 
         shape.setPos(e.position())
         print(shape.pos().y() , self.rect().height())
-        y = canvas_Y_MAX - shape.pos().y() - shape.rect().height()
+        y = shape.pos().y()
+        if picName == "rectangle" or picName == "ellipse":
+            y = canvas_Y_MAX - shape.pos().y() - shape.rect().height()
+        elif picName == "line":
+            y = canvas_Y_MAX - shape.pos().y()
         shape.props['空间坐标'] = str(shape.pos().x()) + '，' + str(y)
         # print(shape.pos())
         self.scene().addItem(shape)
@@ -640,10 +644,10 @@ class MWindow(QtWidgets.QMainWindow):
         # actionDraws = toolbar.insertAction(toolbar.actions()[-1], action)
         # actionDraws.triggered.connect(self.draws)
         action.triggered.connect(self.start)
-        print(toolbar.height())
+        # print(toolbar.height())
 
     def load(self):
-        with open('cfg.json', 'r', encoding='utf8') as f:
+        with open('data/cfg.json', 'r', encoding='utf8') as f:
             content = f.read()
 
         data: list = json.loads(content)
@@ -675,16 +679,16 @@ class MWindow(QtWidgets.QMainWindow):
         # print(itemSaveDataList)
 
         content = json.dumps(itemSaveDataList, indent=4, ensure_ascii=False)
-        with open('cfg.json', 'w', encoding='utf8') as f:
+        with open('data/cfg.json', 'w', encoding='utf8') as f:
             f.write(content)
 
     def get_pos(self):
         for item in self.scene.selectedItems():
-            print('pos: %.2f %.2f' % (item.pos().x(), item.pos().y()))
-            if item.__class__ == "DiamondItem":
+            # print('pos: %.2f %.2f' % (item.pos().x(), item.pos().y()))
+            if item.__class__.__name__ == "DiamondItem":
                 for point in item.polygon():  # 多边形（菱形）
                     print(point)
-            else:
+            elif item.__class__.__name__ == "RectItem":
                 x_1, y_1 = item.props['空间坐标'].split('，')
                 x_1 = float(x_1)
                 y_1 = float(y_1)
@@ -693,6 +697,29 @@ class MWindow(QtWidgets.QMainWindow):
                 x_ls = [x_1, x_2, x_2, x_1]
                 y_ls = [y_1, y_1, y_2, y_2]
                 for i in range(4):
+                    print('%.2f %.2f' % (x_ls[i], y_ls[i]))
+            elif item.__class__.__name__ == "EllipseItem":
+                x_1, y_1 = item.props['空间坐标'].split('，')
+                x_1 = float(x_1)
+                y_1 = float(y_1)
+                x_2 = x_1 + (item.rect().width() / 2)
+                y_2 = y_1 + (item.rect().height() / 2)
+                x_ls = [x_1, x_2, x_1 + item.rect().width(), x_2]
+                y_ls = [y_2, y_1 + item.rect().height(), y_2, y_1]
+                for i in range(len(x_ls)):
+                    print('%.2f %.2f' % (x_ls[i], y_ls[i]))
+            else:
+                x_1, y_1 = item.props['空间坐标'].split('，')
+                x_1 = float(x_1)
+                y_1 = float(y_1)
+                line = item.line()
+                dx = line.dx()
+                dy = 0 - line.dy()
+                x_2 = x_1 + dx
+                y_2 = y_1 + dy
+                x_ls = [x_1, x_2, x_2, x_2]
+                y_ls = [y_1, y_2, y_2, y_2]
+                for i in range(len(x_ls)):
                     print('%.2f %.2f' % (x_ls[i], y_ls[i]))
             print('')
 
@@ -705,11 +732,12 @@ class MWindow(QtWidgets.QMainWindow):
 
     def delAllItems(self):
         self.scene.clear()
+        self.scene.addItem(QtWidgets.QGraphicsRectItem(0, 0, 936, canvas_Y_MAX))
 
     def start(self):
         print('start')
         ShareInfo.gstore.msg_dialog = ''
-        draws_type = [RectItem, EllipseItem]
+        draws_type = [RectItem, EllipseItem, LineItem]
         for item in self.scene.items():
             if item.__class__ in draws_type:
                 ShareInfo.gstore.item_list.append(item)

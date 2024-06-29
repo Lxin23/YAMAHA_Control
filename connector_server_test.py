@@ -4,7 +4,7 @@ import socket
 import time
 import traceback
 
-from share import ShareInfo
+from share import ShareInfo, shape
 
 # 主机地址为空字符串，表示绑定本机所有网络接口ip地址
 # 等待客户端来连接
@@ -56,6 +56,7 @@ def connectionRun():
     print('接受一个客户端连接:', addr)
     global state_point
     while True:
+        ShapeCode = -1
         # print('等待接收消息')
         recved = dataSocket.recv(BUFLEN)  # 期望接受 ShapeSend, PointSend
 
@@ -88,23 +89,42 @@ def connectionRun():
 
         if msg_start_point in info:  # 发送坐标信息
             print('开始发送点位')
-            while True:
-                msg_send_point(dataSocket)  # 发送单个point
-                recved_GoAhead = dataSocket.recv(BUFLEN)  # 期望接收 GoAhead
+            if ShapeCode == shape.get('LineItem'):
+                while True:
+                    msg_send_point(dataSocket)  # 发送单个point
+                    recved_GoAhead = dataSocket.recv(BUFLEN)  # 期望接收 GoAhead
 
-                print(recved_GoAhead.decode())
+                    print(recved_GoAhead.decode())
 
-                if 'GoAhead4' in recved_GoAhead.decode():
-                    print('point msg send finished')
-                    break
-                elif msg_next_point in recved_GoAhead.decode():  # 等待接收消息发送下一个坐标点
-                    continue
-                # elif msg_stop_send_point in recved_GoAhead.decode():
-                #     print('point msg send finished')
-                #     break
-                else:
-                    print('error: accept the', recved_GoAhead.decode())
-                    break
+                    if 'GoAhead2' in recved_GoAhead.decode():
+                        print('point msg send finished')
+                        break
+                    elif msg_next_point in recved_GoAhead.decode():  # 等待接收消息发送下一个坐标点
+                        continue
+                    # elif msg_stop_send_point in recved_GoAhead.decode():
+                    #     print('point msg send finished')
+                    #     break
+                    else:
+                        print('error: accept the', recved_GoAhead.decode())
+                        break
+            else:
+                while True:
+                    msg_send_point(dataSocket)  # 发送单个point
+                    recved_GoAhead = dataSocket.recv(BUFLEN)  # 期望接收 GoAhead
+
+                    print(recved_GoAhead.decode())
+
+                    if 'GoAhead4' in recved_GoAhead.decode():
+                        print('point msg send finished')
+                        break
+                    elif msg_next_point in recved_GoAhead.decode():  # 等待接收消息发送下一个坐标点
+                        continue
+                    # elif msg_stop_send_point in recved_GoAhead.decode():
+                    #     print('point msg send finished')
+                    #     break
+                    else:
+                        print('error: accept the', recved_GoAhead.decode())
+                        break
 
         if msg_start_hanji in info:
             time.sleep(1)

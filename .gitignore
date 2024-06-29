@@ -2,7 +2,7 @@ ui/
 .idea/
 __pycache__/
 byhy.py
-cfg.json
+data/cfg.json
 cfg_test.json
 connector_server.py
 eat.py
@@ -16,4 +16,7 @@ watermalen.py
 Dialog_test.py
 shape_dialog.py
 dialog_test_2.py
+build/
+dist/
+
 
