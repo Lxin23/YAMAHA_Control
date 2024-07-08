@@ -2,8 +2,11 @@ from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import Qt, QPointF, QTimer
 from PySide6.QtGui import QTransform, QAction, QIcon
 from PySide6.QtWidgets import QWidget, QSizePolicy, QProgressBar, QProgressDialog, QVBoxLayout, QLabel, QDialog
+from qt_material import apply_stylesheet
 # import qtawesome as qta
+import qdarkstyle
 import json
+import sys
 
 from connector_server_test import start_server_thread
 from share import ShareInfo, Gstore
@@ -141,6 +144,7 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
             q_ls.append(QPointF(self.pos().x(), self.pos().y() + height))
             q_ls.append(QPointF(self.pos().x() - width / 2, self.pos().y() + height / 2))
             self.setPolygon(q_ls)
+            self.setPos(int(self.props['空间坐标'].split('，')[0]), int(self.props['空间坐标'].split('，')[1]))
             # p_x, p_y = map(float, (self.props['空间坐标'].split('， ')))
             #
             # self.setPos(p_x, p_y)
@@ -151,9 +155,20 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
             # self.setRect(qrf)  # 重新设定
 
         elif cfgName == '棱形高度':
-            qrf = self.rect()
-            qrf.setHeight(float(cfgValue))
-            self.setRect(qrf)  # 重新设定
+            x, y = self.props['空间坐标'].split('，')
+            x = float(x)
+            y = float(y)
+            q_ls = [QPointF(x, y)]
+            height = float(cfgValue)
+            width = float(self.props['棱形宽度'])
+            q_ls.append(QPointF(x + width / 2, y + height / 2))
+            q_ls.append(QPointF(x, y + height))
+            q_ls.append(QPointF(x - width / 2, y + height / 2))
+            self.setPolygon(q_ls)
+            self.setPos(x, y)
+
+            # self.setPos(x, y)
+            # print(x, y)
 
         elif cfgName == '填充颜色':
             color = QtGui.QColor(*[int(v) for v in cfgValue.replace(' ', '').split(',')])
@@ -282,7 +297,7 @@ class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
 
         self.props = {
             '空间坐标': '0，0',
-            '圆形半径': '100',
+            '圆形直径': '100',
             '填充颜色': '222, 241, 255, 0',
             '线条宽度': '1',
             '线条颜色': '0, 0, 0',
@@ -298,8 +313,8 @@ class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
 
         # 其他设置
         qrf = self.rect()
-        qrf.setWidth(float(props["圆形半径"]))
-        qrf.setHeight(float(props["圆形半径"]))
+        qrf.setWidth(float(props["圆形直径"]))
+        qrf.setHeight(float(props["圆形直径"]))
         self.setRect(qrf)
 
         color = QtGui.QColor(*[int(v) for v in props["填充颜色"].replace(' ', '').split(',')])
@@ -572,7 +587,7 @@ class MWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.resize(1400, 900 - 245)
+        self.resize(1400, 900 - 240)
 
         # central Widget
         centralWidget = QtWidgets.QWidget(self)
@@ -630,15 +645,15 @@ class MWindow(QtWidgets.QMainWindow):
         actionGetPosItem.triggered.connect(self.get_pos)
 
         # 添加右侧的伸缩空间，将后续的 Action 推到最右边
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        toolbar.addWidget(spacer)
+        # spacer = QWidget()
+        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # toolbar.addWidget(spacer)
 
-        action = QAction("启动")
-        toolbar.insertAction(None, action)
+        # action = QAction("启动")
+        # toolbar.insertAction(None, action)
         # actionDraws = toolbar.insertAction(toolbar.actions()[-1], action)
         # actionDraws.triggered.connect(self.draws)
-        action.triggered.connect(self.start)
+        # action.triggered.connect(self.start)
         # print(toolbar.height())
 
     def load(self):
@@ -681,8 +696,11 @@ class MWindow(QtWidgets.QMainWindow):
         for item in self.scene.selectedItems():
             # print('pos: %.2f %.2f' % (item.pos().x(), item.pos().y()))
             if item.__class__.__name__ == "DiamondItem":
-                for point in item.polygon():  # 多边形（菱形）
-                    print(point)
+                print(item.pos())
+                info = item.polygon()
+                print(info)
+                # for point in item.polygon().data():  # 多边形（菱形）
+                #     print(point)
             elif item.__class__.__name__ == "RectItem":
                 x_1, y_1 = item.props['空间坐标'].split('，')
                 x_1 = float(x_1)
@@ -828,6 +846,10 @@ class MWindow(QtWidgets.QMainWindow):
         layout_V_3.addWidget(button_clear_scene)
         layout_V_3.addWidget(button_start)
 
+        # button_start.setStyleSheet("QPushButton{font: 25 14pt '微软雅黑 Light';color: rgb(255,255,255);background-color: rgb(20,196,188);"
+        #                         "border: none;border-radius:15px;}"
+        #                         "QPushButton:hover{background-color: rgb(22,218,208);}"
+        #                         "QPushButton:pressed{background-color: rgb(17,171,164);}")
         button_clear_buff.clicked.connect(self.clear_buff)
         button_clear_scene.clicked.connect(self.delAllItems)
         button_start.clicked.connect(self.start)
@@ -881,15 +903,35 @@ class MWindow(QtWidgets.QMainWindow):
         table.cellChanged.connect(self.itemPropChanged)
 
 
+# 加载QSS文件的函数
+def load_qss(filename):
+    with open(filename, 'r', encoding='utf-8') as file:
+        return file.read()
+
+
 # from connector import startCommunicationThread
 # startCommunicationThread()
 if __name__ == '__main__':
     start_server_thread()
 
-    app = QtWidgets.QApplication()
+    app = QtWidgets.QApplication(sys.argv)
     app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.Round)
-
     window = MWindow()
+
+    # 第一种设置主题方法，通过 qss 文件
+    # qss_file = './QSS-master/lightstyle.qss'
+    # window.setStyleSheet(load_qss(qss_file))
+
+    # 第二种设置主题方法，通过 apply_stylesheet
+    # apply_stylesheet(app, theme='dark_blue.xml')
+
+    # 第三种设置主题方法，通过 qdarkstyle
+    app.setStyleSheet(qdarkstyle.load_stylesheet_pyside6())
+    pa = qdarkstyle.palette.Palette
+    pa.ID = 'dark'  # 调色板，可选 'dark', 'light'
+    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyside6', palette=pa))
+
     window.show()
+    window.setWindowTitle('绘图窗口')
     # window.view.centerOn(QPointF(-50, -50))
     app.exec()
