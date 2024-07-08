@@ -1,7 +1,7 @@
 from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import Qt, QPointF, QTimer
 from PySide6.QtGui import QTransform, QAction, QIcon
-from PySide6.QtWidgets import QWidget, QSizePolicy, QProgressBar, QProgressDialog, QVBoxLayout, QLabel
+from PySide6.QtWidgets import QWidget, QSizePolicy, QProgressBar, QProgressDialog, QVBoxLayout, QLabel, QDialog
 # import qtawesome as qta
 import json
 
@@ -26,9 +26,9 @@ QHeaderView::section {
 '''
 
 
-class ProgressBar(QWidget):
-    def __init__(self):
-        super().__init__()
+class ProgressBar(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.initUI()
 
     def initUI(self):
@@ -40,10 +40,10 @@ class ProgressBar(QWidget):
         # self.text.move(130, 30)
         self.text.setAlignment(Qt.AlignCenter)
 
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
         # layout.addWidget(self.text)
         layout.addWidget(self.text, 0, Qt.AlignCenter)
-        self.setLayout(layout)
+        # self.setLayout(layout)
 
 
 class Item:
@@ -182,7 +182,7 @@ class RectItem(Item, QtWidgets.QGraphicsRectItem):
         super().__init__(*args)
 
         self.props = {
-            '空间坐标': str(self.pos().x()) + '，' + str(self.pos().y()),
+            '空间坐标': '0，0',
             '矩形宽度': '100',
             '矩形高度': '100',
             '填充颜色': '222, 241, 255, 0',
@@ -281,9 +281,8 @@ class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
         super().__init__(*args)
 
         self.props = {
-            '空间坐标': str(self.pos().x()) + '，' + str(self.pos().y()),
-            '椭圆宽度': '100',
-            '椭圆高度': '100',
+            '空间坐标': '0，0',
+            '圆形半径': '100',
             '填充颜色': '222, 241, 255, 0',
             '线条宽度': '1',
             '线条颜色': '0, 0, 0',
@@ -299,8 +298,8 @@ class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
 
         # 其他设置
         qrf = self.rect()
-        qrf.setWidth(float(props["椭圆宽度"]))
-        qrf.setHeight(float(props["椭圆高度"]))
+        qrf.setWidth(float(props["圆形半径"]))
+        qrf.setHeight(float(props["圆形半径"]))
         self.setRect(qrf)
 
         color = QtGui.QColor(*[int(v) for v in props["填充颜色"].replace(' ', '').split(',')])
@@ -324,17 +323,13 @@ class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
             print("set", x, y)
             self.setPos(x, y)
 
-        elif cfgName == '椭圆宽度':
-            qrf = self.rect()
-            qrf.setWidth(float(cfgValue))
-            self.setRect(qrf)  # 重新设定
-
-        elif cfgName == '椭圆高度':
+        elif cfgName == '圆形半径':
             qrf = self.rect()
             qrf.setHeight(float(cfgValue))
+            qrf.setWidth(float(cfgValue))
             x, y = self.props['空间坐标'].split('，')
-            self.remap_xy(x, y)
             self.setRect(qrf)  # 重新设定
+            self.remap_xy(x, y)
 
         elif cfgName == '填充颜色':
             color = QtGui.QColor(*[int(v) for v in cfgValue.replace(' ', '').split(',')])
@@ -746,7 +741,9 @@ class MWindow(QtWidgets.QMainWindow):
         ShareInfo.gstore.update_msg()
 
         self.pgb = ProgressBar()
-        self.pgb.show()
+        self.pgb.exec()
+        # self.pgb.show()
+        # self.pgb.setFocus()
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.updateProgress)
