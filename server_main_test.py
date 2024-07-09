@@ -6,6 +6,7 @@ from qt_material import apply_stylesheet
 # import qtawesome as qta
 import qdarkstyle
 import json
+import math
 import sys
 
 from connector_server_test import start_server_thread
@@ -14,7 +15,7 @@ from share import ShareInfo, Gstore
 canvas_X_MAX = 958
 canvas_Y_MAX = 600
 # X_MAX = 210， Y_MAX = 150，机械臂活动范围
-shape_draw = ["rectangle", "ellipse", "diamond", "line", "text"]
+shape_draw = ["rectangle", "ellipse", "diamond", "hexagon", "pentagon", "line", "text"]
 tableStyle = '''
 QTableWidget {
     gridline-color: #e0e0e0;
@@ -137,14 +138,19 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
             print("changed", self.pos().x(), self.pos().y())
 
         elif cfgName == '棱形宽度':
-            q_ls = [QPointF(self.pos().x(), self.pos().y())]
+            x = 0
+            y = 0
+            q_ls = [QPointF(x, y)]
             width = float(cfgValue)
             height = float(self.props['棱形高度'])
-            q_ls.append(QPointF(self.pos().x() + width / 2, self.pos().y() + height / 2))
-            q_ls.append(QPointF(self.pos().x(), self.pos().y() + height))
-            q_ls.append(QPointF(self.pos().x() - width / 2, self.pos().y() + height / 2))
+            q_ls.append(QPointF(x + width / 2, y + height / 2))
+            q_ls.append(QPointF(x, y + height))
+            q_ls.append(QPointF(x - width / 2, y + height / 2))
             self.setPolygon(q_ls)
-            self.setPos(int(self.props['空间坐标'].split('，')[0]), int(self.props['空间坐标'].split('，')[1]))
+            x, y = self.props['空间坐标'].split('，')
+            x = float(x)
+            y = float(y)
+            self.setPos(x, y)
             # p_x, p_y = map(float, (self.props['空间坐标'].split('， ')))
             #
             # self.setPos(p_x, p_y)
@@ -155,9 +161,8 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
             # self.setRect(qrf)  # 重新设定
 
         elif cfgName == '棱形高度':
-            x, y = self.props['空间坐标'].split('，')
-            x = float(x)
-            y = float(y)
+            x = 0
+            y = 0
             q_ls = [QPointF(x, y)]
             height = float(cfgValue)
             width = float(self.props['棱形宽度'])
@@ -165,7 +170,11 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
             q_ls.append(QPointF(x, y + height))
             q_ls.append(QPointF(x - width / 2, y + height / 2))
             self.setPolygon(q_ls)
+            x, y = self.props['空间坐标'].split('，')
+            x = float(x)
+            y = float(y)
             self.setPos(x, y)
+            # self.moveBy()
 
             # self.setPos(x, y)
             # print(x, y)
@@ -190,6 +199,212 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
 
         else:
             return
+
+
+class HexagonItem(Item, QtWidgets.QGraphicsPolygonItem):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+        self.props = {
+            '空间坐标': str(self.pos().x()) + '，' + str(self.pos().y()),
+            # 'length': '10',
+            '六边形边长': '100',
+            '填充颜色': '222, 241, 255, 0',
+            '线条宽度': '1',
+            '线条颜色': '0, 0, 0',
+            'zValue': '0.0',
+        }
+
+    def loadData(self, data):
+        # 设置props
+        self.props = data["props"]
+        props = self.props
+        # print(data["pos"])
+        self.setPos(*data["pos"])
+        self.setZValue(float(props["zValue"]))
+
+        # 其他设置
+        qrf = self.rect()
+        qrf.setWidth(float(props["棱形宽度"]))
+        qrf.setHeight(float(props["棱形高度"]))
+        self.setRect(qrf)
+
+        color = QtGui.QColor(*[int(v) for v in props["填充颜色"].replace(' ', '').split(',')])
+        self.setBrush(QtGui.QBrush(color))
+
+        pen = self.pen()
+        pen.setWidth(int(props["线条宽度"]))
+        pen.setColor(QtGui.QColor(*[int(v) for v in props["线条颜色"].replace(' ', '').split(',')]))
+        self.setPen(pen)
+
+    def itemPropChanged(self, cfgName, cfgValue: str):
+        self.props[cfgName] = cfgValue
+
+        if cfgName == '空间坐标':
+            x, y = cfgValue.split('，')
+            x = float(x)
+            y = float(y)
+            print("set", x, y)
+
+            # 更新矩形的位置，但保留原来的宽度和高度
+            self.setPos(x, y)
+            print("changed", self.pos().x(), self.pos().y())
+
+        elif cfgName == '六边形边长':
+            sq3 = 1.732
+            # x, y = self.props['空间坐标'].split('，')
+            # x = float(x)
+            # y = float(y)
+            x = 0
+            y = 0
+            length = float(cfgValue)
+            q_ls = []
+            x_1 = x
+            x_2 = 0.5 * length
+            x_3 = 1.5 * length
+            x_4 = 2 * length
+            y_1 = y
+            y_2 = 0.5 * sq3 * length
+            y_3 = -0.5 * sq3 * length
+            q_ls.append(QPointF(x_1, y_1))
+            q_ls.append(QPointF(x_2, y_2))
+            q_ls.append(QPointF(x_3, y_2))
+            q_ls.append(QPointF(x_4, y_1))
+            q_ls.append(QPointF(x_3, y_3))
+            q_ls.append(QPointF(x_2, y_3))
+            self.setPolygon(q_ls)
+            x, y = self.props['空间坐标'].split('，')
+            x = float(x)
+            y = float(y)
+            self.setPos(x, y)
+            # self.moveBy()
+
+            # self.setPos(x, y)
+            # print(x, y)
+
+        elif cfgName == '填充颜色':
+            color = QtGui.QColor(*[int(v) for v in cfgValue.replace(' ', '').split(',')])
+            self.setBrush(QtGui.QBrush(color))
+
+        elif cfgName == '线条颜色':
+            pen = self.pen()
+            color = QtGui.QColor(*[int(v) for v in cfgValue.replace(' ', '').split(',')])
+            pen.setColor(color)
+            self.setPen(pen)
+
+        elif cfgName == '线条宽度':
+            pen = self.pen()
+            pen.setWidth(int(cfgValue))
+            self.setPen(pen)
+
+        elif cfgName == 'zValue':
+            self.setZValue(float(cfgValue))
+
+        else:
+            return
+
+
+class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+        self.props = {
+            '空间坐标': str(self.pos().x()) + '，' + str(self.pos().y()),
+            # 'length': '10',
+            '五边形边长': '100',
+            '填充颜色': '222, 241, 255, 0',
+            '线条宽度': '1',
+            '线条颜色': '0, 0, 0',
+            'zValue': '0.0',
+        }
+
+    def loadData(self, data):
+        # 设置props
+        self.props = data["props"]
+        props = self.props
+        # print(data["pos"])
+        self.setPos(*data["pos"])
+        self.setZValue(float(props["zValue"]))
+
+        # 其他设置
+        qrf = self.rect()
+        qrf.setWidth(float(props["棱形宽度"]))
+        qrf.setHeight(float(props["棱形高度"]))
+        self.setRect(qrf)
+
+        color = QtGui.QColor(*[int(v) for v in props["填充颜色"].replace(' ', '').split(',')])
+        self.setBrush(QtGui.QBrush(color))
+
+        pen = self.pen()
+        pen.setWidth(int(props["线条宽度"]))
+        pen.setColor(QtGui.QColor(*[int(v) for v in props["线条颜色"].replace(' ', '').split(',')]))
+        self.setPen(pen)
+
+    def itemPropChanged(self, cfgName, cfgValue: str):
+        self.props[cfgName] = cfgValue
+
+        if cfgName == '空间坐标':
+            x, y = cfgValue.split('，')
+            x = float(x)
+            y = float(y)
+            print("set", x, y)
+
+            # 更新矩形的位置，但保留原来的宽度和高度
+            self.setPos(x, y)
+            print("changed", self.pos().x(), self.pos().y())
+
+        elif cfgName == '五边形边长':
+            sq3 = 1.732
+            # x, y = self.props['空间坐标'].split('，')
+            # x = float(x)
+            # y = float(y)
+            x = 0
+            y = 0
+            length = float(cfgValue)
+            l = 0.5 * length / math.sin(math.radians(18))
+            q_ls = []
+            x_1 = x
+            x_2 = math.cos(math.radians(36)) * length
+            y_2 = math.sin(math.radians(36)) * length
+            y_1 = y
+            x_3 = math.cos(math.radians(72)) * l
+            y_3 = math.sin(math.radians(72)) * l
+            q_ls.append(QPointF(x_1, y_1))
+            q_ls.append(QPointF(x_2, y_2))
+            q_ls.append(QPointF(x_3, y_3))
+            q_ls.append(QPointF(-x_3, y_3))
+            q_ls.append(QPointF(-x_2, y_2))
+            self.setPolygon(q_ls)
+            x, y = self.props['空间坐标'].split('，')
+            x = float(x)
+            y = float(y)
+            self.setPos(x, y)
+            # self.moveBy()
+
+            # self.setPos(x, y)
+            # print(x, y)
+
+        elif cfgName == '填充颜色':
+            color = QtGui.QColor(*[int(v) for v in cfgValue.replace(' ', '').split(',')])
+            self.setBrush(QtGui.QBrush(color))
+
+        elif cfgName == '线条颜色':
+            pen = self.pen()
+            color = QtGui.QColor(*[int(v) for v in cfgValue.replace(' ', '').split(',')])
+            pen.setColor(color)
+            self.setPen(pen)
+
+        elif cfgName == '线条宽度':
+            pen = self.pen()
+            pen.setWidth(int(cfgValue))
+            self.setPen(pen)
+
+        elif cfgName == 'zValue':
+            self.setZValue(float(cfgValue))
+
+        else:
+            return
+
 
 
 class RectItem(Item, QtWidgets.QGraphicsRectItem):
@@ -545,6 +760,18 @@ class DnDGraphicView(QtWidgets.QGraphicsView):
         elif picName == "diamond":
             shape = DiamondItem([QPointF(0, 0), QPointF(50, 50), QPointF(0, 100), QPointF(-50, 50)])
             # shape.props['length'] = str(shape.polygon().length())
+        elif picName == "hexagon":
+            sq3 = 1.732
+            shape = HexagonItem([QPointF(0, 0), QPointF(50, 50 * sq3), QPointF(150, 50 * sq3), QPointF(200, 0),
+                                 QPointF(150, -50 * sq3), QPointF(50, -50 * sq3)])
+        elif picName == "pentagon":
+            x_2 = 100 * math.cos(math.radians(36))
+            y_2 = 100 * math.sin(math.radians(36))
+            l = 50 / math.sin(math.radians(18))
+            x_3 = l * math.cos(math.radians(72))
+            y_3 = l * math.sin(math.radians(72))
+            shape = PentagonItem([QPointF(0, 0), QPointF(x_2, y_2), QPointF(x_3, y_3),
+                                  QPointF(-x_3, y_3), QPointF(-x_2, y_2)])
 
         shape.setPos(e.position())
         print(shape.pos().y() , self.rect().height())
@@ -587,7 +814,7 @@ class MWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.resize(1400, 900 - 240)
+        self.resize(1400, 900 - 230)    # toolbar.height = 30
 
         # central Widget
         centralWidget = QtWidgets.QWidget(self)
@@ -695,7 +922,7 @@ class MWindow(QtWidgets.QMainWindow):
     def get_pos(self):
         for item in self.scene.selectedItems():
             # print('pos: %.2f %.2f' % (item.pos().x(), item.pos().y()))
-            if item.__class__.__name__ == "DiamondItem":
+            if item.__class__.__name__ == "DiamondItem" or item.__class__.__name__ == "HexagonItem" or item.__class__.__name__ == "PentagonItem":
                 print(item.pos())
                 info = item.polygon()
                 print(info)
@@ -808,7 +1035,7 @@ class MWindow(QtWidgets.QMainWindow):
                 col += 1
 
     def setupCanvas(self):
-        self.scene = QtWidgets.QGraphicsScene(0, 0, canvas_X_MAX, canvas_Y_MAX)  # 大小为 800 X 600 像素
+        self.scene = QtWidgets.QGraphicsScene(0, 0, canvas_X_MAX - 8, canvas_Y_MAX)
         self.scene.addItem(QtWidgets.QGraphicsRectItem(0, 0, 936, canvas_Y_MAX))
         self.view = DnDGraphicView(self.scene)
         # self.view.centerOn(QPointF(-50, -50))
@@ -919,7 +1146,7 @@ if __name__ == '__main__':
     window = MWindow()
 
     # 第一种设置主题方法，通过 qss 文件
-    # qss_file = './QSS-master/lightstyle.qss'
+    # qss_file = './QSS_files/dark.qss'
     # window.setStyleSheet(load_qss(qss_file))
 
     # 第二种设置主题方法，通过 apply_stylesheet
@@ -928,7 +1155,7 @@ if __name__ == '__main__':
     # 第三种设置主题方法，通过 qdarkstyle
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyside6())
     pa = qdarkstyle.palette.Palette
-    pa.ID = 'dark'  # 调色板，可选 'dark', 'light'
+    pa.ID = 'light'  # 调色板，可选 'dark', 'light'
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyside6', palette=pa))
 
     window.show()

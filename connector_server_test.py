@@ -8,7 +8,7 @@ from share import ShareInfo, shape
 
 # 主机地址为空字符串，表示绑定本机所有网络接口ip地址
 # 等待客户端来连接
-IP = '192.168.0.120'
+IP = '0.0.0.0'
 # 端口号
 PORT = 24
 # 定义一次从socket缓冲区最多读入512个字节数据
