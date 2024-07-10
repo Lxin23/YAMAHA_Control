@@ -114,7 +114,7 @@ def connectionRun():
 
                     print(recved_GoAhead.decode())
 
-                    if 'GoAhead4' in recved_GoAhead.decode():
+                    if 'GoAhead10' in recved_GoAhead.decode():
                         print('point msg send finished')
                         break
                     elif msg_next_point in recved_GoAhead.decode():  # 等待接收消息发送下一个坐标点
@@ -135,6 +135,13 @@ def connectionRun():
             print('收到 焊机完成信息')
             ShareInfo.gstore.msg_dialog = 'stop'
             # print(ShareInfo.gstore.msg_dialog)
+
+        if 'total_info' in info:
+            print('输出完整坐标信息')
+            print(ShareInfo.gstore.msg_shapes.pop())
+            for i in ShareInfo.gstore.msg_points:
+                print(i)
+            ShareInfo.gstore.msg_points.clear()
 
     dataSocket.close()
     listenSocket.close()

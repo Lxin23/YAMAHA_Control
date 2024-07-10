@@ -1,5 +1,9 @@
-shape = {'RectItem': '1\r\n', 'EllipseItem': '2\r\n', 'LineItem': '4\r\n'}
-proportion = 4.8  # 机械臂坐标系大小为画布大小的几倍
+import math
+
+
+shape = {'RectItem': '1\r\n', 'EllipseItem': '2\r\n', 'LineItem': '4\r\n',
+         "DiamondItem": '5\r\n', 'PentagonItem': '6\r\n', 'HexagonItem': '7\r\n'}
+proportion = 1  # 机械臂坐标系大小为画布大小的几倍, 为 1 时为测试, 比例为 4.8
 point_num = 50  # 初始点位
 msg_hanji_satrtcode = '1\r\n'
 f_z = -1.0
@@ -95,13 +99,81 @@ class Gstore:
                 y_2 = y_1 + dy
                 x_ls = [x_1, x_2, x_2, x_2]
                 y_ls = [y_1, y_2, y_2, y_2]
+            elif shape_code == shape.get('DiamondItem'):
+                # 菱形的空间坐标是正下方顶点的空间坐标
+                x, y = item.props['空间坐标'].split('，')
+                x = float(x)
+                y = float(y)
+                length = float(item.props['菱形边长'])
+                l = length / 1.414
+
+                x_1 = x
+                y_1 = y
+
+                x_2 = x_1 + l
+                x_3 = x_1 - l
+                y_2 = y + l
+                y_3 = y + 2 * l
+
+                x_ls = [x_1, x_2, x_1, x_3]
+                y_ls = [y_1, y_2, y_3, y_2]
+            elif shape_code == shape.get('PentagonItem'):
+                # 五边形的坐标为顶点下方的边的中心
+                x, y = item.props['空间坐标'].split('，')
+                x = float(x)
+                y = float(y)
+                length = float(item.props['五边形边长'])
+                height = 0.5 * length / math.tan(math.radians(18))
+
+                x_1 = x
+                y_1 = y + height
+                x_2 = x_1 + length * math.cos(math.radians(36))
+                x_3 = x_1 + 0.5 * length
+                x_4 = x_1 - 0.5 * length
+                x_5 = x_1 - length * math.cos(math.radians(36))
+                y_2 = y_1 - length * math.sin(math.radians(36))
+                y_3 = y
+
+                # x_2 = math.cos(math.radians(36)) * length
+                # y_2 = math.sin(math.radians(36)) * length
+                # # x_3 = math.cos(math.radians(72)) * l
+                # x_3 = 0.5 * length
+                # # y_3 = math.sin(math.radians(72)) * l
+                # y_3 = 0.5 * length / math.tan(math.radians(18))
+
+                x_ls = [x_1, x_2, x_3, x_4, x_5]
+                y_ls = [y_1, y_2, y_3, y_3, y_2]
+            elif shape_code == shape.get('HexagonItem'):
+                # 六边形的坐标为左边顶点的垂线与底边延长线的交点
+                sq3 = 1.732
+                x, y = item.props['空间坐标'].split('，')
+                x = float(x)
+                y = float(y)
+                length = float(item.props['六边形边长'])
+                weight = 0.5 * length
+                height = sq3 * weight
+
+                x_1 = x
+                y_1 = y + height
+
+                x_2 = x_1 + 0.5 * length
+                x_3 = x_1 + 1.5 * length
+                x_4 = x_1 + 2 * length
+                y_2 = y
+                y_3 = y + 2 * height
+
+                x_ls = [x_1, x_2, x_3, x_4, x_3, x_2]
+                y_ls = [y_1, y_3, y_3, y_1, y_2, y_2]
             else:
                 print('图形信息错误', item.__class__.__name__)
                 continue
 
-            for i in range(len(x_ls)):
+            for i in range(len(x_ls)):  # 发送十个点
                 # msg.append(f'P{point_num} = {x_ls[i]} {y_ls[i]} 0 0 0 0')
                 self.msg_points.append(msg_transform(x_ls[i], y_ls[i], fz=f_z, fr=f_r))
+
+            for i in range(10 - len(x_ls)):
+                self.msg_points.append(msg_transform(x_ls[len(x_ls) - 1], y_ls[len(x_ls) - 1], fz=f_z, fr=f_r))
 
         point_num = 50
         print('shapes %d\npoints %d' % (len(self.msg_shapes), len(self.msg_points)))

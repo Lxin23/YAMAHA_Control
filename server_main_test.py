@@ -128,10 +128,12 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
             x, y = cfgValue.split('，')
             x = float(x)
             y = float(y)
+            self.setPolygon(float(self.props['菱形边长']))
             print("set", x, y)
 
             # 更新矩形的位置，但保留原来的宽度和高度
-            self.setPos(x, y)
+            # self.setPos(x, y)
+            self.remap_xy(x, y)
             print("changed", self.pos().x(), self.pos().y())
 
         elif cfgName == '菱形边长':
@@ -140,7 +142,8 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
             x, y = self.props['空间坐标'].split('，')
             x = float(x)
             y = float(y)
-            self.setPos(x, y)
+            # self.setPos(x, y)
+            self.remap_xy(x, y)
             # self.moveBy()
 
             # self.setPos(x, y)
@@ -167,7 +170,12 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
         else:
             return
 
-    def setPolygon(self, lengh: float):
+    def remap_xy(self, x, y):
+        x = float(x)
+        y = canvas_Y_MAX - float(y) - float(self.props['菱形边长']) * 1.414
+        self.setPos(x, y)
+
+    def setPolygon(self, length: float):
         x = 0
         y = 0
         q_ls = []
@@ -175,7 +183,7 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
         x_1 = x
         y_1 = y
 
-        l = lengh / 1.414
+        l = length / 1.414
         x_2 = l
         x_3 = -l
         y_2 = l
@@ -194,7 +202,7 @@ class HexagonItem(Item, QtWidgets.QGraphicsPolygonItem):
         super().__init__(*args)
 
         self.props = {
-            '空间坐标': str(self.pos().x()) + '，' + str(self.pos().y()),
+            '空间坐标': '0，0',
             # 'length': '10',
             '六边形边长': '100',
             '填充颜色': '222, 241, 255, 0',
@@ -233,7 +241,7 @@ class HexagonItem(Item, QtWidgets.QGraphicsPolygonItem):
             print("set", x, y)
 
             # 更新矩形的位置，但保留原来的宽度和高度
-            self.setPos(x, y)
+            self.reamp_xy(x, y)
             print("changed", self.pos().x(), self.pos().y())
 
         elif cfgName == '六边形边长':
@@ -242,7 +250,7 @@ class HexagonItem(Item, QtWidgets.QGraphicsPolygonItem):
             x, y = self.props['空间坐标'].split('，')
             x = float(x)
             y = float(y)
-            self.setPos(x, y)
+            self.reamp_xy(x, y)
             # self.moveBy()
 
             # self.setPos(x, y)
@@ -292,6 +300,11 @@ class HexagonItem(Item, QtWidgets.QGraphicsPolygonItem):
 
         super().setPolygon(q_ls)
 
+    def reamp_xy(self, x, y):
+        x = float(x)
+        y = canvas_Y_MAX - float(y) - float(self.props['六边形边长']) * 1.732 / 2
+        self.setPos(x, y)
+
 
 class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
     def __init__(self, *args):
@@ -337,7 +350,7 @@ class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
             print("set", x, y)
 
             # 更新矩形的位置，但保留原来的宽度和高度
-            self.setPos(x, y)
+            self.reamp_xy(x, y)
             print("changed", self.pos().x(), self.pos().y())
 
         elif cfgName == '五边形边长':
@@ -346,7 +359,7 @@ class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
             x, y = self.props['空间坐标'].split('，')
             x = float(x)
             y = float(y)
-            self.setPos(x, y)
+            self.reamp_xy(x, y)
 
         elif cfgName == '填充颜色':
             color = QtGui.QColor(*[int(v) for v in cfgValue.replace(' ', '').split(',')])
@@ -372,15 +385,18 @@ class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
     def setPolygon(self, length: float):
         x = 0
         y = 0
-        l = 0.5 * length / math.sin(math.radians(18))
+        # l = 0.5 * length / math.sin(math.radians(18))
+        # print('%.2f' % l)
         q_ls = []
 
         x_1 = x
         x_2 = math.cos(math.radians(36)) * length
         y_2 = math.sin(math.radians(36)) * length
         y_1 = y
-        x_3 = math.cos(math.radians(72)) * l
-        y_3 = math.sin(math.radians(72)) * l
+        # x_3 = math.cos(math.radians(72)) * l
+        x_3 = 0.5 * length
+        # y_3 = math.sin(math.radians(72)) * l
+        y_3 = 0.5 * length / math.tan(math.radians(18))
 
         q_ls.append(QPointF(x_1, y_1))
         q_ls.append(QPointF(x_2, y_2))
@@ -389,6 +405,11 @@ class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
         q_ls.append(QPointF(-x_2, y_2))
 
         super().setPolygon(q_ls)
+
+    def reamp_xy(self, x, y):
+        x = float(x)
+        y = canvas_Y_MAX - float(y) - 0.5 * float(self.props['五边形边长']) / math.tan(math.radians(18))
+        self.setPos(x, y)
 
 
 class RectItem(Item, QtWidgets.QGraphicsRectItem):
@@ -742,7 +763,8 @@ class DnDGraphicView(QtWidgets.QGraphicsView):
         elif picName == "text":
             shape = TextItem("文本内容")
         elif picName == "diamond":
-            shape = DiamondItem([QPointF(0, 0), QPointF(50, 50), QPointF(0, 100), QPointF(-50, 50)])
+            l = 100 / 1.414
+            shape = DiamondItem([QPointF(0, 0), QPointF(l, l), QPointF(0, 2 * l), QPointF(-l, l)])
             # shape.props['length'] = str(shape.polygon().length())
         elif picName == "hexagon":
             sq3 = 1.732
@@ -764,7 +786,13 @@ class DnDGraphicView(QtWidgets.QGraphicsView):
             y = canvas_Y_MAX - shape.pos().y() - shape.rect().height()
         elif picName == "line":
             y = canvas_Y_MAX - shape.pos().y()
-        shape.props['空间坐标'] = str(shape.pos().x()) + '，' + str(y)
+        elif picName == "diamond":
+            y = canvas_Y_MAX - float(y) - 100 * 1.414
+        elif picName == "hexagon":
+            y = canvas_Y_MAX - float(y) - 100 * 1.732 / 2
+        elif picName == "pentagon":
+            y = canvas_Y_MAX - float(y) - 0.5 * 100 / math.sin(math.radians(18))
+        shape.props['空间坐标'] = str(shape.pos().x()) + '，' + '{:.1f}'.format(y)
         # print(shape.pos())
         self.scene().addItem(shape)
 
@@ -854,6 +882,9 @@ class MWindow(QtWidgets.QMainWindow):
 
         actionGetPosItem = toolbar.addAction("输出")
         actionGetPosItem.triggered.connect(self.get_pos)
+
+        actionZeroItem = toolbar.addAction("归零")
+        actionZeroItem.triggered.connect(self.zero)
 
         # 添加右侧的伸缩空间，将后续的 Action 推到最右边
         # spacer = QWidget()
@@ -947,6 +978,11 @@ class MWindow(QtWidgets.QMainWindow):
                     print('%.2f %.2f' % (x_ls[i], y_ls[i]))
             print('')
 
+    def zero(self):
+        for item in self.scene.selectedItems():
+            # item.remap_xy(0, 0)
+            item.setPos(0.0, 438.2)
+
     def delItem(self):
         import shiboken6
         items = self.scene.selectedItems()
@@ -961,7 +997,7 @@ class MWindow(QtWidgets.QMainWindow):
     def start(self):
         print('start')
         ShareInfo.gstore.msg_dialog = ''
-        draws_type = [RectItem, EllipseItem, LineItem]
+        draws_type = [RectItem, EllipseItem, LineItem, DiamondItem, HexagonItem, PentagonItem]
         for item in self.scene.items():
             if item.__class__ in draws_type:
                 ShareInfo.gstore.item_list.append(item)
@@ -970,18 +1006,23 @@ class MWindow(QtWidgets.QMainWindow):
         ShareInfo.gstore.update_msg()
 
         self.pgb = ProgressBar()
-        self.pgb.exec()
-        # self.pgb.show()
-        # self.pgb.setFocus()
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.updateProgress)
         self.timer.start(100)  # 每100毫秒更新一次
 
+        self.pgb.exec()
+        # self.pgb.show()
+        # self.pgb.setFocus()
+
     def updateProgress(self):
         if ShareInfo.gstore.msg_dialog == 'stop':
             self.timer.stop()
+            # self.pgb.accept()
             self.pgb.close()
+            # self.pgb.hide()
+            # self.destroy()
+            # print('destroy 执行')
 
     def clear_buff(self):
         print('clear buffer')
