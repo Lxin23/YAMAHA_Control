@@ -1,12 +1,19 @@
 import math
 
 
-shape = {'RectItem': '1\r\n', 'EllipseItem': '2\r\n', 'LineItem': '4\r\n',
-         "DiamondItem": '5\r\n', 'PentagonItem': '6\r\n', 'HexagonItem': '7\r\n'}
-proportion = 1  # 机械臂坐标系大小为画布大小的几倍, 为 1 时为测试, 比例为 4.8
+shape = {
+    'RectItem': '1\r\n',
+    'EllipseItem': '2\r\n',
+    "DiamondItem": '3\r\n',
+    'LineItem': '4\r\n',
+    'PentagonItem': '5\r\n',
+    'HexagonItem': '6\r\n',
+}
+
+proportion = 4.8  # 机械臂坐标系大小为画布大小的几倍, 为 1 时为测试, 比例为 4.8
 point_num = 50  # 初始点位
 msg_hanji_satrtcode = '1\r\n'
-f_z = -1.0
+f_z = -1.0  # 机械臂 z 轴坐标，往上是减
 f_r = 84.5
 canvas_max_y = 600
 

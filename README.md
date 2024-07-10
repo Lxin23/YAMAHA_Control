@@ -15,5 +15,5 @@ pip install pyinstaller
 
 `pyinstaller`打包
 ```shell
-pyinstaller server_main_test.spec
+pyinstaller server_main.spec
 ```

@@ -9,7 +9,7 @@ import json
 import math
 import sys
 
-from connector_server_test import start_server_thread
+from connector_server import start_server_thread
 from share import ShareInfo, Gstore
 
 canvas_X_MAX = 958
@@ -404,6 +404,12 @@ class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
         q_ls.append(QPointF(-x_3, y_3))
         q_ls.append(QPointF(-x_2, y_2))
 
+        # q_ls.append(QPointF(x_1, y_1))
+        # q_ls.append(QPointF(-x_3, y_3))
+        # q_ls.append(QPointF(x_2, y_2))
+        # q_ls.append(QPointF(-x_2, y_2))
+        # q_ls.append(QPointF(x_3, y_3))
+
         super().setPolygon(q_ls)
 
     def reamp_xy(self, x, y):
@@ -558,7 +564,7 @@ class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
             print("set", x, y)
             self.setPos(x, y)
 
-        elif cfgName == '圆形半径':
+        elif cfgName == '圆形直径':
             qrf = self.rect()
             qrf.setHeight(float(cfgValue))
             qrf.setWidth(float(cfgValue))
@@ -871,19 +877,19 @@ class MWindow(QtWidgets.QMainWindow):
         actionSave = toolbar.addAction("保存")  # qta.icon("ph.download-light",color='green'),
         actionSave.triggered.connect(self.save)
 
-        actionLoad = toolbar.addAction("加载")
+        actionLoad = toolbar.addAction("读取")
         actionLoad.triggered.connect(self.load)
 
-        actionDelItem = toolbar.addAction("删除")
-        actionDelItem.triggered.connect(self.delItem)
+        # actionDelItem = toolbar.addAction("删除")
+        # actionDelItem.triggered.connect(self.delItem)
 
-        actionDelAllItem = toolbar.addAction("清空")
-        actionDelAllItem.triggered.connect(self.delAllItems)
+        # actionDelAllItem = toolbar.addAction("清空")
+        # actionDelAllItem.triggered.connect(self.delAllItems)
 
-        actionGetPosItem = toolbar.addAction("输出")
-        actionGetPosItem.triggered.connect(self.get_pos)
+        # actionGetPosItem = toolbar.addAction("输出")
+        # actionGetPosItem.triggered.connect(self.get_pos)
 
-        actionZeroItem = toolbar.addAction("归零")
+        actionZeroItem = toolbar.addAction("置零")
         actionZeroItem.triggered.connect(self.zero)
 
         # 添加右侧的伸缩空间，将后续的 Action 推到最右边
@@ -1090,8 +1096,8 @@ class MWindow(QtWidgets.QMainWindow):
 
         button_start = QtWidgets.QPushButton('启动绘图', self)
         button_clear_buff = QtWidgets.QPushButton('清空缓冲', self)
-        button_draws = QtWidgets.QPushButton('绘制', self)
-        button_clear_scene = QtWidgets.QPushButton('清除画布', self)
+        button_draws = QtWidgets.QPushButton('删除选中', self)
+        button_clear_scene = QtWidgets.QPushButton('清空画布', self)
 
         layout_V_2.addWidget(button_draws)
         layout_V_2.addWidget(button_clear_buff)
@@ -1102,6 +1108,7 @@ class MWindow(QtWidgets.QMainWindow):
         #                         "border: none;border-radius:15px;}"
         #                         "QPushButton:hover{background-color: rgb(22,218,208);}"
         #                         "QPushButton:pressed{background-color: rgb(17,171,164);}")
+        button_draws.clicked.connect(self.delItem)
         button_clear_buff.clicked.connect(self.clear_buff)
         button_clear_scene.clicked.connect(self.delAllItems)
         button_start.clicked.connect(self.start)
