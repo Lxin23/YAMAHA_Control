@@ -1,6 +1,6 @@
 from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import Qt, QPointF, QTimer
-from PySide6.QtGui import QTransform, QAction, QIcon
+from PySide6.QtGui import QTransform, QAction, QIcon, QPainter, QLinearGradient, QColor
 from PySide6.QtWidgets import QWidget, QSizePolicy, QProgressBar, QProgressDialog, QVBoxLayout, QLabel, QDialog
 from qt_material import apply_stylesheet
 # import qtawesome as qta
@@ -10,12 +10,12 @@ import math
 import sys
 
 from connector_server import start_server_thread
-from share import ShareInfo, Gstore
+from share import ShareInfo
 
 canvas_X_MAX = 958
 canvas_Y_MAX = 600
 # X_MAX = 210， Y_MAX = 150，机械臂活动范围
-shape_draw = ["rectangle", "ellipse", "diamond", "hexagon", "pentagon", "line", "text"]
+shape_draw = ["rectangle", "ellipse", "line", "diamond", "pentagon", "hexagon"]
 tableStyle = '''
 QTableWidget {
     gridline-color: #e0e0e0;
@@ -27,6 +27,7 @@ QHeaderView::section {
     border-left: 0px solid #e0e0e0;
     border-right: 1px solid #e0e0e0;
     border-bottom: 1px solid #e0e0e0;
+    }
 '''
 
 
@@ -617,20 +618,27 @@ class LineItem(Item, QtWidgets.QGraphicsLineItem):
         self.props = data["props"]
         props = self.props
         x, y = data["pos"]
-        self.setPos(x, y)
         self.setZValue(float(props["zValue"]))
-
-        # 其他设置
-        line = self.line()
-        line.setLine(x, y, x + float(props["线长"]), y)
-        line.setAngle(float(props["旋转角度"]))
-        # print("线条",line)
-        self.setLine(line)
 
         pen = self.pen()
         pen.setWidth(int(props["线宽"]))
         pen.setColor(QtGui.QColor(*[int(v) for v in props["颜色"].replace(' ', '').split(',')]))
         self.setPen(pen)
+
+        # 其他设置
+        line = self.line()
+        line.setLength(float(props["线长"]))
+
+        line.setLine(0, 0, 0 + float(props["线长"]), 0)
+        # line.setAngle(float(props["旋转角度"]))
+        # print("线条",line)
+        self.setLine(line)
+        # print(self.line().length())
+        # self.setPos(*data["pos"])
+        # print(*data["pos"], sep=' ')
+        # print(line)
+        # self.setPos(100, 100)
+        self.remap_xy(*(props['空间坐标'].split('，')))
 
     def itemPropChanged(self, cfgName, cfgValue: str):
         self.props[cfgName] = cfgValue
@@ -639,10 +647,7 @@ class LineItem(Item, QtWidgets.QGraphicsLineItem):
             # print(cfgValue)
             # qrf = self.pen()
             x, y = cfgValue.split('，')
-            x = float(x)
-            y = canvas_Y_MAX - float(y)
-            y = float(y)
-            self.setPos(x, y)
+            self.remap_xy(x, y)
 
         if cfgName == '线宽':
             pen = self.pen()
@@ -670,6 +675,14 @@ class LineItem(Item, QtWidgets.QGraphicsLineItem):
 
         else:
             return
+
+    def remap_xy(self, x, y):
+        x = float(x)
+        y = canvas_Y_MAX - float(y)
+        y = float(y)
+        print(x, y, sep=' ')
+        self.setPos(x, y)
+        print(self.pos())
 
 
 class TextItem(Item, QtWidgets.QGraphicsTextItem):
@@ -757,18 +770,18 @@ class DnDGraphicView(QtWidgets.QGraphicsView):
 
         picName = e.source().dndinfo['name']
 
-        if picName == "rectangle":
+        if picName == shape_draw[0]:
             shape = RectItem(0, 0, 100, 100)
-        elif picName == "ellipse":
+        elif picName == shape_draw[1]:
             shape = EllipseItem(0, 0, 100, 100)
-        elif picName == "line":
+        elif picName == shape_draw[2]:
             shape = LineItem(0, 0, 100, 0)
             pen = shape.pen()
             pen.setWidth(3)
             shape.setPen(pen)
         elif picName == "text":
             shape = TextItem("文本内容")
-        elif picName == "diamond":
+        elif picName == shape_draw[3]:
             l = 100 / 1.414
             shape = DiamondItem([QPointF(0, 0), QPointF(l, l), QPointF(0, 2 * l), QPointF(-l, l)])
             # shape.props['length'] = str(shape.polygon().length())
@@ -832,7 +845,7 @@ class MWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.resize(1400, 900 - 230)  # toolbar.height = 30
+        self.resize(1400, 900 - 240)  # toolbar.height = 30
 
         # central Widget
         centralWidget = QtWidgets.QWidget(self)
@@ -904,6 +917,20 @@ class MWindow(QtWidgets.QMainWindow):
         # action.triggered.connect(self.start)
         # print(toolbar.height())
 
+    def paintEvent(self, event):
+        # 创建QPainter对象
+        painter = QPainter(self)
+
+        # 创建一个线性渐变对象
+        # 这里设置渐变从左上角到右下角，颜色从蓝色到红色
+        gradient = QLinearGradient(self.rect().topLeft(), self.rect().bottomRight())
+        gradient.setColorAt(0, QColor(0, 0, 255))  # 蓝色
+        gradient.setColorAt(1, QColor(255, 0, 0))  # 红色
+
+        # 使用渐变填充背景
+        painter.setBrush(gradient)
+        painter.drawRect(self.rect())
+
     def load(self):
         with open('data/cfg.json', 'r', encoding='utf8') as f:
             content = f.read()
@@ -969,8 +996,8 @@ class MWindow(QtWidgets.QMainWindow):
                 y_ls = [y_2, y_1 + item.rect().height(), y_2, y_1]
                 for i in range(len(x_ls)):
                     print('%.2f %.2f' % (x_ls[i], y_ls[i]))
-            else:
-                x_1, y_1 = item.props['空间坐标'].split('，')
+            elif item.__class__.__name__ == "LineItem":
+                x_1, y_1 = self.pos().x(), self.pos().y()
                 x_1 = float(x_1)
                 y_1 = float(y_1)
                 line = item.line()
@@ -978,16 +1005,16 @@ class MWindow(QtWidgets.QMainWindow):
                 dy = 0 - line.dy()
                 x_2 = x_1 + dx
                 y_2 = y_1 + dy
-                x_ls = [x_1, x_2, x_2, x_2]
-                y_ls = [y_1, y_2, y_2, y_2]
+                x_ls = [x_1, x_2, ]
+                y_ls = [y_1, y_2, ]
                 for i in range(len(x_ls)):
                     print('%.2f %.2f' % (x_ls[i], y_ls[i]))
             print('')
 
     def zero(self):
         for item in self.scene.selectedItems():
-            # item.remap_xy(0, 0)
-            item.setPos(0.0, 438.2)
+            item.remap_xy(0, 0)
+            # item.setPos(0.0, 438.2)
 
     def delItem(self):
         import shiboken6
@@ -998,7 +1025,7 @@ class MWindow(QtWidgets.QMainWindow):
 
     def delAllItems(self):
         self.scene.clear()
-        self.scene.addItem(QtWidgets.QGraphicsRectItem(0, 0, 936, canvas_Y_MAX))
+        self.scene.addItem(QtWidgets.QGraphicsRectItem(0, 0, 946, canvas_Y_MAX))
 
     def start(self):
         print('start')
@@ -1045,8 +1072,8 @@ class MWindow(QtWidgets.QMainWindow):
         row, col = 0, 0
 
         for shape in shape_draw:
-
-            pixmap = QtGui.QPixmap(f'./images/{shape}.png')
+            file_path = f'./images/{shape}_w.png'
+            pixmap = QtGui.QPixmap(file_path)
             # 设定图片缩放大小，这里是40个像素的宽度，高度也会等比例缩放
             pixmap = pixmap.scaledToWidth(40, Qt.SmoothTransformation)
 
@@ -1066,7 +1093,7 @@ class MWindow(QtWidgets.QMainWindow):
                 col += 1
 
     def setupCanvas(self):
-        self.scene = QtWidgets.QGraphicsScene(0, 0, canvas_X_MAX - 8, canvas_Y_MAX)
+        self.scene = QtWidgets.QGraphicsScene(0, 0, canvas_X_MAX - 3, canvas_Y_MAX)
         self.scene.addItem(QtWidgets.QGraphicsRectItem(0, 0, 936, canvas_Y_MAX))
         self.view = DnDGraphicView(self.scene)
         # self.view.centerOn(QPointF(-50, -50))
@@ -1079,7 +1106,7 @@ class MWindow(QtWidgets.QMainWindow):
         # 绘制属性面板
         self.tabWidget = QtWidgets.QTableWidget(0, 2, self)
         self.tabWidget.verticalHeader().hide()  # 隐藏垂直表头
-        self.tabWidget.setStyleSheet(tableStyle)
+        # self.tabWidget.setStyleSheet(tableStyle)
         self.tabWidget.setHorizontalHeaderLabels(['属性', '值'])
         self.tabWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.tabWidget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
@@ -1098,7 +1125,7 @@ class MWindow(QtWidgets.QMainWindow):
         button_clear_buff = QtWidgets.QPushButton('清空缓冲', self)
         button_draws = QtWidgets.QPushButton('删除选中', self)
         button_clear_scene = QtWidgets.QPushButton('清空画布', self)
-
+        # button_start.setStyleSheet()
         layout_V_2.addWidget(button_draws)
         layout_V_2.addWidget(button_clear_buff)
         layout_V_3.addWidget(button_clear_scene)
@@ -1187,9 +1214,10 @@ if __name__ == '__main__':
     # 第三种设置主题方法，通过 qdarkstyle
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyside6())
     pa = qdarkstyle.palette.Palette
-    pa.ID = 'light'  # 调色板，可选 'dark', 'light'
+    pa.ID = 'dark'  # 调色板，可选 'dark', 'light'
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyside6', palette=pa))
 
+    window.scene.setBackgroundBrush(QColor(255,255,255))    # 设置画布背景色为白色
     window.show()
     window.setWindowTitle('绘图窗口')
     # window.view.centerOn(QPointF(-50, -50))

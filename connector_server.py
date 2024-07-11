@@ -142,6 +142,7 @@ def connectionRun():
             for i in ShareInfo.gstore.msg_points:
                 print(i)
             ShareInfo.gstore.msg_points.clear()
+            ShareInfo.gstore.msg_dialog = 'stop'
 
     dataSocket.close()
     listenSocket.close()
