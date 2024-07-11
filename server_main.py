@@ -1219,6 +1219,7 @@ if __name__ == '__main__':
 
     window.scene.setBackgroundBrush(QColor(255,255,255))    # 设置画布背景色为白色
     window.show()
+    window.setWindowIcon(QtGui.QPixmap('./images/logo.png'))
     window.setWindowTitle('绘图窗口')
     # window.view.centerOn(QPointF(-50, -50))
     app.exec()
