@@ -15,7 +15,7 @@ Socket连接
 
     机械臂: GoAhead{i} 	# I 第几指个点
     # 如果点位发送错误，发送NoPoint
-    # 默认四个点，当I 为4，既 GoAhead4 时退出循环
+    # 默认四个点，当I 为10，既 GoAhead10 时退出循环
 
 机械臂: HanjiStart	# 等待指令开始焊接
 

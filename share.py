@@ -62,10 +62,22 @@ def msg_transform(fx, fy, fz=0.0, fr=0.0, fa=0.0, fb=0.0, f=1, f_1=0, f_2=0):
 
 class Gstore:
     msg_dialog = ''
+    msg_set_z = ''
+    msg_z_statue = ''
     item_list = []
     msg_shapes = []
     msg_points = []
     msg_hanji_satrt = msg_hanji_satrtcode
+    msg_restart = False
+
+    def update_z_test(self):
+        self.msg_shapes.append('7\r\n')
+        for i in range(10):
+            self.msg_points.append('%d,%s,%s,%s,%s,%s,%s,%d,%d,%d\r\n' %
+               (3, format_number(0), format_number(0), format_number(f_z), format_number(f_r),
+                format_number(0), format_number(0), 1, 0, 0))
+
+        print('shapes %d\npoints %d' % (len(self.msg_shapes), len(self.msg_points)))
 
     def update_msg(self):
         """
@@ -184,14 +196,21 @@ class Gstore:
 
         point_num = 50
         print('shapes %d\npoints %d' % (len(self.msg_shapes), len(self.msg_points)))
-        self.item_list.clear()
+        # self.item_list.clear()
 
     def clear_buff(self):
         self.item_list.clear()
         self.msg_shapes.clear()
         self.msg_points.clear()
         print(
-            'len item_list%d\nshapes %d\npoints %d' % (len(self.item_list), len(self.msg_shapes), len(self.msg_points)))
+            'len item_list %d\nshapes %d\npoints %d' % (len(self.item_list), len(self.msg_shapes), len(self.msg_points)))
+
+    def restart(self):
+        print("share_info reset")
+        self.msg_restart = True
+        self.msg_points.clear()
+        self.msg_shapes.clear()
+        self.update_msg()
 
 
 class ShareInfo:

@@ -2,7 +2,7 @@ from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import Qt, QPointF, QTimer
 from PySide6.QtGui import QTransform, QAction, QIcon, QPainter, QLinearGradient, QColor
 from PySide6.QtWidgets import QWidget, QSizePolicy, QProgressBar, QProgressDialog, QVBoxLayout, QLabel, QDialog, \
-    QInputDialog, QMessageBox, QFileDialog
+    QInputDialog, QMessageBox, QFileDialog, QPushButton, QMenu, QLineEdit, QHBoxLayout
 from qt_material import apply_stylesheet
 # import qtawesome as qta
 import qdarkstyle
@@ -21,10 +21,73 @@ canvas_Y_MAX = 600
 shape_draw = ["rectangle", "ellipse", "line", "diamond", "pentagon", "hexagon"]
 point_format = '{:.1f}'
 qss_file = './QSS_files/Ubuntu.qss'
+json_file = ''
 end = '_w.png'
-
-
 # end = '.png'  # 文件后缀名，_w 指white
+
+
+class SetZDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.resize(300, 100)
+        self.main_layout = QVBoxLayout()
+
+        self.label_1 = QLabel("请输入z轴高度: ")
+        self.label_1.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.main_layout.addWidget(self.label_1)
+
+        self.line_edit = QLineEdit()
+        self.line_edit.setText(str(share.f_z))
+        self.main_layout.addWidget(self.line_edit)
+
+        self.label_2 = QLabel("")
+        self.label_2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(self.label_2)
+
+        self.btn_1 = QPushButton("运行")
+        self.btn_2 = QPushButton("修改")
+        self.btn_3 = QPushButton("保存")
+        layout_2 = QHBoxLayout()
+        layout_2.addWidget(self.btn_1)
+        layout_2.addWidget(self.btn_2)
+        layout_2.addWidget(self.btn_3)
+
+        self.main_layout.addLayout(layout_2)
+        self.setLayout(self.main_layout)
+        self.bind()
+        self.setWindowTitle("设置z轴高度")
+
+    def bind(self):
+        self.btn_1.clicked.connect(self.send_z)
+        self.btn_2.clicked.connect(self.change)
+        self.btn_3.clicked.connect(self.close)
+
+    def change(self):
+        ShareInfo.gstore.msg_z_statue = 'keep'
+        self.line_edit.setReadOnly(False)
+
+    def send_z(self):
+        ShareInfo.gstore.msg_z_statue = ''
+        z_height = self.line_edit.text()
+        share.f_z = float(z_height)
+        self.label_2.setText("机械臂移动中...")
+        ShareInfo.gstore.update_z_test()
+        self.line_edit.setReadOnly(True)
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_statue)
+        self.timer.start(500)
+
+    def update_statue(self):
+        if ShareInfo.gstore.msg_set_z == 'stop':
+            ShareInfo.gstore.msg_set_z = 'go'
+            self.label_2.setText("机械臂移动完毕")
+            self.timer.stop()
+
+    def closeEvent(self, event):
+        ShareInfo.gstore.msg_z_statue = 'finish'
+        ShareInfo.gstore.clear_buff()
+        event.accept()
+
 
 
 class ProgressBar(QDialog):
@@ -44,7 +107,13 @@ class ProgressBar(QDialog):
         layout = QVBoxLayout(self)
         # layout.addWidget(self.text)
         layout.addWidget(self.text, 0, Qt.AlignCenter)
+        button_restart = QPushButton("重新启动")
+        layout.addWidget(button_restart)
+        button_restart.clicked.connect(self.restart)
         # self.setLayout(layout)
+
+    def restart(self):
+        ShareInfo.gstore.restart()
 
     def closeEvent(self, event):
         ShareInfo.gstore.clear_buff()
@@ -65,10 +134,15 @@ class Item:
 
     def itemChange(self, change, value, ):
 
-        if change == QtWidgets.QGraphicsItem.ItemPositionChange and value == True:
+        if change == QtWidgets.QGraphicsItem.ItemPositionChange:
             # 更新属性表中的坐标值
-            self.props['空间坐标'] = f"{value.x()}，{value.y()}"
-            print(value.x(), value.y())
+            x, y = self.map_xy(value.x(), value.y())
+            if x == -0.0:
+                x = 0.0
+            if y == -0.0:
+                y = 0.0
+            self.props['空间坐标'] = f"{x}，{y}"
+            # print(x, y, sep=' ')
             window.setPropTable(self.props)
 
         # 被选中
@@ -176,11 +250,6 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
         else:
             return
 
-    def remap_xy(self, x, y):
-        x = float(x) + float(self.props['菱形边长']) / 1.414
-        y = canvas_Y_MAX - float(y) - float(self.props['菱形边长']) * 1.414
-        self.setPos(x, y)
-
     def setPolygon(self, length: float):
         x = 0
         y = 0
@@ -201,6 +270,17 @@ class DiamondItem(Item, QtWidgets.QGraphicsPolygonItem):
         q_ls.append(QPointF(x_3, y_2))
 
         super().setPolygon(q_ls)
+
+    def remap_xy(self, x, y):
+        x = float(x) + float(self.props['菱形边长']) / 1.414
+        y = canvas_Y_MAX - float(y) - float(self.props['菱形边长']) * 1.414
+        self.setPos(x, y)
+
+    def map_xy(self, x, y):
+        length = float(self.props['菱形边长']) / 1.414
+        x = point_format.format(x - length)
+        y = point_format.format(canvas_Y_MAX - float(y) - float(self.props['菱形边长']) * 1.414)
+        return float(x), float(y)
 
 
 class HexagonItem(Item, QtWidgets.QGraphicsPolygonItem):
@@ -251,7 +331,7 @@ class HexagonItem(Item, QtWidgets.QGraphicsPolygonItem):
             print("set", x, y)
 
             # 更新矩形的位置，但保留原来的宽度和高度
-            self.reamp_xy(x, y)
+            self.remap_xy(x, y)
             print("changed", self.pos().x(), self.pos().y())
 
         elif cfgName == '六边形边长':
@@ -260,7 +340,7 @@ class HexagonItem(Item, QtWidgets.QGraphicsPolygonItem):
             x, y = self.props['空间坐标'].split('，')
             x = float(x)
             y = float(y)
-            self.reamp_xy(x, y)
+            self.remap_xy(x, y)
             # self.moveBy()
 
             # self.setPos(x, y)
@@ -310,10 +390,15 @@ class HexagonItem(Item, QtWidgets.QGraphicsPolygonItem):
 
         super().setPolygon(q_ls)
 
-    def reamp_xy(self, x, y):
+    def remap_xy(self, x, y):
         x = float(x)
         y = canvas_Y_MAX - float(y) - float(self.props['六边形边长']) * 1.732 / 2
         self.setPos(x, y)
+
+    def map_xy(self, x, y):
+        x = float(x)
+        y = point_format.format(canvas_Y_MAX - float(y) - float(self.props['六边形边长']) * 1.732 / 2)
+        return x, float(y)
 
 
 class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
@@ -364,7 +449,7 @@ class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
             print("set", x, y)
 
             # 更新矩形的位置，但保留原来的宽度和高度
-            self.reamp_xy(x, y)
+            self.remap_xy(x, y)
             print("changed", self.pos().x(), self.pos().y())
 
         elif cfgName == '五边形边长':
@@ -373,7 +458,7 @@ class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
             x, y = self.props['空间坐标'].split('，')
             x = float(x)
             y = float(y)
-            self.reamp_xy(x, y)
+            self.remap_xy(x, y)
 
         elif cfgName == '填充颜色':
             color = QtGui.QColor(*[int(v) for v in cfgValue.replace(' ', '').split(',')])
@@ -426,10 +511,15 @@ class PentagonItem(Item, QtWidgets.QGraphicsPolygonItem):
 
         super().setPolygon(q_ls)
 
-    def reamp_xy(self, x, y):
+    def remap_xy(self, x, y):
         x = float(x) + float(self.props['五边形边长']) * math.cos(math.radians(36))
         y = canvas_Y_MAX - float(y) - 0.5 * float(self.props['五边形边长']) / math.tan(math.radians(18))
         self.setPos(x, y)
+
+    def map_xy(self, x, y):
+        x = point_format.format(float(x) - float(self.props['五边形边长']) * math.cos(math.radians(36)))
+        y = point_format.format(canvas_Y_MAX - float(y) - 0.5 * float(self.props['五边形边长']) / math.tan(math.radians(18)))
+        return float(x), float(y)
 
 
 class RectItem(Item, QtWidgets.QGraphicsRectItem):
@@ -534,6 +624,11 @@ class RectItem(Item, QtWidgets.QGraphicsRectItem):
         y = canvas_Y_MAX - float(y) - self.rect().height()
         self.setPos(x, y)
 
+    def map_xy(self, x, y):
+        x = float(x)
+        y = canvas_Y_MAX - float(y) - self.rect().height()
+        return x, y
+
 
 class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
     def __init__(self, *args):
@@ -620,6 +715,11 @@ class EllipseItem(Item, QtWidgets.QGraphicsEllipseItem):
         y = canvas_Y_MAX - float(y) - self.rect().height()
         self.setPos(x, y)
 
+    def map_xy(self, x, y):
+        x = float(x)
+        y = canvas_Y_MAX - float(y) - self.rect().height()
+        return x, y
+
 
 class LineItem(Item, QtWidgets.QGraphicsLineItem):
     def __init__(self, *args):
@@ -704,6 +804,11 @@ class LineItem(Item, QtWidgets.QGraphicsLineItem):
         print(x, y, sep=' ')
         self.setPos(x, y)
         print(self.pos())
+
+    def map_xy(self, x, y):
+        x = float(x)
+        y = canvas_Y_MAX - float(y)
+        return x, y
 
 
 class TextItem(Item, QtWidgets.QGraphicsTextItem):
@@ -837,7 +942,8 @@ class DnDGraphicView(QtWidgets.QGraphicsView):
         # shape.setPos(e.position())
         print(shape.pos().y(), self.rect().height())
         y = shape.pos().y()
-        x = shape.pos().x()
+        # x = shape.pos().x()
+        x = e.position().x()
         if picName == "rectangle" or picName == "ellipse":
             y = canvas_Y_MAX - shape.pos().y() - shape.rect().height()
         elif picName == "line":
@@ -853,7 +959,7 @@ class DnDGraphicView(QtWidgets.QGraphicsView):
         self.scene().addItem(shape)
 
         # 设置item可以移动
-        # shape.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+        shape.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
         # 设置item可以选中
         shape.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
         # 设置item可以聚焦，这样才会有键盘按键回调keyPressEvent
@@ -907,7 +1013,8 @@ class MWindow(QtWidgets.QMainWindow):
         self.setupRightWidget()
         self.splitter.insertWidget(0, self.view)
 
-        self.setupToolBar()
+        self.setupQmenu()
+        # self.setupToolBar()
         # self.view.centerOn(50, -50)
 
         # self.setCanvasTransform()
@@ -918,67 +1025,26 @@ class MWindow(QtWidgets.QMainWindow):
         transform.scale(1, -1)  # 纵向翻转
         self.view.setTransform(transform)
 
-    def setupToolBar(self):
+    def setupQmenu(self):
+        self.menu = self.menuBar()
+        self.fileMenu = QMenu("文件")
+        self.file_read = QAction("读取")
+        self.file_save = QAction("保存")
+        self.file_save_as = QAction("另存为")
+        self.fileMenu.addActions([self.file_read, self.file_save, self.file_save_as])
+        self.menu.addMenu(self.fileMenu)
 
-        # 创建 工具栏 对象 并添加
-        toolbar = QtWidgets.QToolBar(self)
-        self.addToolBar(toolbar)
+        self.setting = QMenu("设置")
+        self.setting_fz = QAction("机械臂Z轴高度")
+        self.setting.addAction(self.setting_fz)
+        self.menu.addMenu(self.setting)
 
-        # 添加 工具栏 条目Action
-        actionSave = toolbar.addAction("保存")  # qta.icon("ph.download-light",color='green'),
-        actionSave.triggered.connect(self.save)
+        self.file_read.triggered.connect(self.load)
+        self.file_save.triggered.connect(self.save)
+        self.file_save_as.triggered.connect(self.save_as)
+        self.setting_fz.triggered.connect(self.set_fz)
 
-        actionLoad = toolbar.addAction("读取")
-        actionLoad.triggered.connect(self.load)
-
-        # actionDelItem = toolbar.addAction("删除")
-        # actionDelItem.triggered.connect(self.delItem)
-
-        # actionDelAllItem = toolbar.addAction("清空")
-        # actionDelAllItem.triggered.connect(self.delAllItems)
-
-        # actionGetPosItem = toolbar.addAction("输出")
-        # actionGetPosItem.triggered.connect(self.get_pos)
-
-        actionZeroItem = toolbar.addAction("置零")
-        actionZeroItem.triggered.connect(self.zero)
-
-        actionZeroItem = toolbar.addAction("设置")
-        actionZeroItem.triggered.connect(self.set_fz)
-
-        actionZeroItem = toolbar.addAction("save")
-        actionZeroItem.triggered.connect(self.save_t)
-
-        actionZeroItem = toolbar.addAction("open")
-        actionZeroItem.triggered.connect(self.open_t)
-
-        # 添加右侧的伸缩空间，将后续的 Action 推到最右边
-        # spacer = QWidget()
-        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # toolbar.addWidget(spacer)
-
-        # action = QAction("启动")
-        # toolbar.insertAction(None, action)
-        # actionDraws = toolbar.insertAction(toolbar.actions()[-1], action)
-        # actionDraws.triggered.connect(self.draws)
-        # action.triggered.connect(self.start)
-        # print(toolbar.height())
-
-    # def paintEvent(self, event):
-    #     # 创建QPainter对象
-    #     painter = QPainter(self)
-    #
-    #     # 创建一个线性渐变对象
-    #     # 这里设置渐变从左上角到右下角，颜色从蓝色到红色
-    #     gradient = QLinearGradient(self.rect().topLeft(), self.rect().bottomRight())
-    #     gradient.setColorAt(0, QColor(0, 0, 255))  # 蓝色
-    #     gradient.setColorAt(1, QColor(255, 0, 0))  # 红色
-    #
-    #     # 使用渐变填充背景
-    #     painter.setBrush(gradient)
-    #     painter.drawRect(self.rect())
-
-    def open_t(self):
+    def load(self):
         fileName_read = QFileDialog.getOpenFileName(self,
                                                     "文件读取",
                                                     self.cwd,
@@ -986,7 +1052,8 @@ class MWindow(QtWidgets.QMainWindow):
         if str(fileName_read[0]) == "":
             QMessageBox.information(self, "提示", "未能成功读取文件，请重新读取。")  # 调用弹窗提示
         else:
-            print(fileName_read[0])
+            global json_file
+            json_file = fileName_read[0]
             with open(fileName_read[0], 'r', encoding='utf8') as f:
                 content = f.read()
 
@@ -1002,13 +1069,29 @@ class MWindow(QtWidgets.QMainWindow):
                 self.scene.addItem(item)
 
                 # 设置item可以移动
-                # item.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+                item.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
                 # 设置item可以选中
                 item.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
                 # 设置item可以聚焦，这样才会有键盘按键回调keyPressEvent
                 item.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
 
-    def save_t(self):
+    def save(self):
+        # print(json_file)
+        if os.path.exists(json_file):
+            itemSaveDataList = []
+            for item in self.scene.items():
+                if hasattr(item, 'toSaveData'):
+                    # print(item.pos().x(), item.pos().y())
+                    saveData = item.toSaveData()
+                    itemSaveDataList.append(saveData)
+
+            content = json.dumps(itemSaveDataList, indent=4, ensure_ascii=False)
+            with open(json_file, 'w', encoding='utf8') as f:
+                f.write(content)
+        else:
+            self.save_as()
+
+    def save_as(self):
         fileName_save = QFileDialog.getSaveFileName(self,
                                                     "文件保存",
                                                     self.cwd,  # 起始路径
@@ -1016,6 +1099,8 @@ class MWindow(QtWidgets.QMainWindow):
         if str(fileName_save[0]) == "":
             QMessageBox.information(self, "提示", "没有保存数据,请重新保存。")  # 调用弹窗提示
         else:
+            global json_file
+            json_file = fileName_save[0]
             itemSaveDataList = []
             for item in self.scene.items():
                 if hasattr(item, 'toSaveData'):
@@ -1026,42 +1111,6 @@ class MWindow(QtWidgets.QMainWindow):
             content = json.dumps(itemSaveDataList, indent=4, ensure_ascii=False)
             with open(fileName_save[0], 'w', encoding='utf8') as f:
                 f.write(content)
-
-    def load(self):
-        with open('data/cfg.json', 'r', encoding='utf8') as f:
-            content = f.read()
-
-        data: list = json.loads(content)
-        data.reverse()
-
-        for itemData in data:
-            typeName = itemData["type"]
-
-            theClass = globals()[typeName]
-            item = theClass()
-            item.loadData(itemData)
-            self.scene.addItem(item)
-
-            # 设置item可以移动
-            # item.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
-            # 设置item可以选中
-            item.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-            # 设置item可以聚焦，这样才会有键盘按键回调keyPressEvent
-            item.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
-
-    def save(self):
-        itemSaveDataList = []
-        for item in self.scene.items():
-            if hasattr(item, 'toSaveData'):
-                # print(item.pos().x(), item.pos().y())
-                saveData = item.toSaveData()
-                itemSaveDataList.append(saveData)
-
-        # print(itemSaveDataList)
-
-        content = json.dumps(itemSaveDataList, indent=4, ensure_ascii=False)
-        with open('data/cfg.json', 'w', encoding='utf8') as f:
-            f.write(content)
 
     def set_fz(self):
         d, ok = QInputDialog.getDouble(self, "设置机械臂Z轴高度", "请输入Z轴的值:",
@@ -1127,6 +1176,8 @@ class MWindow(QtWidgets.QMainWindow):
             shiboken6.delete(item)
 
     def delAllItems(self):
+        global josn_file
+        json_file = ''
         self.scene.clear()
         self.scene.addItem(QtWidgets.QGraphicsRectItem(0, 0, 946, canvas_Y_MAX))
 
@@ -1161,8 +1212,10 @@ class MWindow(QtWidgets.QMainWindow):
             # print('destroy 执行')
 
     def clear_buff(self):
-        print('clear buffer')
-        ShareInfo.gstore.clear_buff()
+        # print('clear buffer')
+        # ShareInfo.gstore.clear_buff()
+        self.ser_z_dialog = SetZDialog(self)
+        self.ser_z_dialog.exec()
 
     def setupLeftPane(self):
         leftLayout = QtWidgets.QVBoxLayout()
@@ -1224,7 +1277,7 @@ class MWindow(QtWidgets.QMainWindow):
         layout_H_1.addLayout(layout_V_3)
 
         button_start = QtWidgets.QPushButton('启动绘图', self)
-        button_clear_buff = QtWidgets.QPushButton('暂定..', self)
+        button_clear_buff = QtWidgets.QPushButton('Z轴设置', self)
         button_draws = QtWidgets.QPushButton('删除选中', self)
         button_clear_scene = QtWidgets.QPushButton('清空画布', self)
         # button_start.setStyleSheet()
@@ -1238,7 +1291,7 @@ class MWindow(QtWidgets.QMainWindow):
         #                         "QPushButton:hover{background-color: rgb(22,218,208);}"
         #                         "QPushButton:pressed{background-color: rgb(17,171,164);}")
         button_draws.clicked.connect(self.delItem)
-        # button_clear_buff.clicked.connect(self.clear_buff)
+        button_clear_buff.clicked.connect(self.clear_buff)
         button_clear_scene.clicked.connect(self.delAllItems)
         button_start.clicked.connect(self.start)
 
@@ -1310,7 +1363,7 @@ if __name__ == '__main__':
     # window.setStyleSheet(load_qss(qss_file))
 
     # 第二种设置主题方法，通过 apply_stylesheet
-    # apply_stylesheet(app, theme=‘dark_cyan.xml’)
+    # apply_stylesheet(app, theme='dark_cyan.xml')
 
     # 第三种设置主题方法，通过 qdarkstyle
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyside6())

@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['server_main_test.py', 'share.py', 'connector_server_test.py'],
+    ['server_main.py', 'share.py', 'connector_server.py'],
     pathex=[],
     binaries=[],
     datas=[('./data', 'data'),
