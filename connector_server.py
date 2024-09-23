@@ -1,4 +1,4 @@
-#  === TCP 服务端程序 server.py ===
+#  === TCP 服务端程序 connector_server.py ===
 import threading
 import socket
 import time

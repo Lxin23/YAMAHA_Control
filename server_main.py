@@ -20,7 +20,7 @@ canvas_Y_MAX = 600
 # X_MAX = 210， Y_MAX = 150，机械臂活动范围
 shape_draw = ["rectangle", "ellipse", "line", "diamond", "pentagon", "hexagon"]
 point_format = '{:.1f}'
-qss_file = './QSS_files/Ubuntu.qss'
+qss_file = './QSS_files/blacksoft.css'
 json_file = ''
 end = '_w.png'
 # end = '.png'  # 文件后缀名，_w 指white
