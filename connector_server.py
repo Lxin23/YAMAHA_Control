@@ -1,4 +1,5 @@
 #  === TCP 服务端程序 connector_server.py ===
+# 后端通信代码
 import threading
 import socket
 import time

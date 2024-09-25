@@ -1,3 +1,4 @@
+# 主程序代码
 from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import Qt, QPointF, QTimer
 from PySide6.QtGui import QTransform, QAction, QIcon, QPainter, QLinearGradient, QColor
